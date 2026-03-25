@@ -201,11 +201,7 @@ const ROLE_PRESETS = [
   { label: "Саппорт", badge_label: "Саппорт", badge_icon: "💬", badge_color: "#FF8DA1" },
   { label: "Разработчик", badge_label: "Разработчик", badge_icon: "💻", badge_color: "#C6B3FF" },
 ] as const;
-const CHAT_STICKERS = [
-  { id: "mono_r", title: "RoWorth", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%23080808'/><rect x='8' y='8' width='104' height='104' rx='24' fill='none' stroke='%23ffffff' stroke-opacity='.2'/><text x='60' y='73' text-anchor='middle' font-family='Arial' font-size='56' font-weight='700' fill='white'>R</text></svg>" },
-  { id: "mono_code", title: "Code", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%230b0b0b'/><path d='M44 38 26 60l18 22' stroke='%23fff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='m76 38 18 22-18 22' stroke='%23fff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M66 28 54 92' stroke='%23fff' stroke-width='8' stroke-linecap='round'/></svg>" },
-  { id: "mono_star", title: "Premium", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%23060606'/><path d='m60 24 11 22 25 4-18 17 4 25-22-12-22 12 4-25-18-17 25-4 11-22Z' fill='%23fff'/></svg>" },
-];
+const CHAT_STICKERS = ["❤️", "😎", "🤣", "🔥", "👀", "🙏", "💀", "✨", "😡", "👍", "🎯", "🤝"];
 
 const T = {
   bg: "#080705",
@@ -867,6 +863,7 @@ function CreateOfferSheet({
   const [cur, setCur] = useState<Currency>("STARS");
   const [stock, setStock] = useState("1");
   const [banner, setBanner] = useState("");
+  const [images, setImages] = useState<string[]>([]);
   const [auto, setAuto] = useState(false);
   const [autoContent, setAutoContent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -931,7 +928,9 @@ function CreateOfferSheet({
       stock: Number(stock),
       auto,
       auto_content: auto ? autoContent.trim() || null : null,
-      banner: banner.trim() || null,
+      banner: (images[0] || banner).trim() || null,
+      images: images.length ? images : null,
+      cover_index: 0,
       boosted: 0,
       boost_end: 0,
       sales: 0,
@@ -953,6 +952,8 @@ function CreateOfferSheet({
         auto: payload.auto,
         auto_content: payload.auto_content,
         banner: payload.banner,
+        images: payload.images,
+        cover_index: 0,
         boosted: payload.boosted,
         boost_end: payload.boost_end,
         sales: payload.sales,
@@ -1066,19 +1067,37 @@ function CreateOfferSheet({
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <input className="inp" style={{ flex: 1, minWidth: 220 }} value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Ссылка или data-url баннера" />
               <button className="btn-ghost" type="button" onClick={() => bannerFileRef.current?.click()}>
-                Загрузить баннер
+                Загрузить до 2 фото
               </button>
             </div>
+            {images.length > 0 && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {images.map((image, index) => (
+                  <div key={image} style={{ position: "relative" }}>
+                    <img src={image} alt="" style={{ width: 74, height: 74, objectFit: "cover", borderRadius: 12, border: `1px solid ${T.line}` }} />
+                    <button
+                      type="button"
+                      onClick={() => setImages((current) => current.filter((_, currentIndex) => currentIndex !== index))}
+                      style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 999, border: "none", background: T.red, color: "#fff", cursor: "pointer" }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <input
               ref={bannerFileRef}
               type="file"
               accept="image/*"
+              multiple
               style={{ display: "none" }}
               onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                const img = await readImageAsDataUrl(file);
-                setBanner(img);
+                const files = Array.from(event.target.files || []).slice(0, 2);
+                if (!files.length) return;
+                const nextImages = await Promise.all(files.map((file) => readImageAsDataUrl(file)));
+                setImages(nextImages.slice(0, 2));
+                setBanner(nextImages[0] || "");
                 event.target.value = "";
               }}
             />
@@ -1310,8 +1329,17 @@ function HomeScreen({
           <StarsBadge value={me.stars} />
         </div>
 
-        {!compactHeader && (
-          <>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateRows: compactHeader ? "0fr" : "1fr",
+            opacity: compactHeader ? 0 : 1,
+            transform: compactHeader ? "translateY(-10px)" : "translateY(0)",
+            transition: "opacity .24s ease, transform .24s ease, grid-template-rows .24s ease",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ minHeight: 0 }}>
             <input className="inp" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по товарам и услугам..." />
 
             <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
@@ -1335,8 +1363,8 @@ function HomeScreen({
                 <option value="price_desc">Цена по убыванию</option>
               </select>
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
 
       <div
@@ -1607,18 +1635,18 @@ function ChatView({
           <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 10 }}>
             {CHAT_STICKERS.map((sticker) => (
               <button
-                key={sticker.id}
+                key={sticker}
                 className="btn-ghost"
                 style={{ padding: 6, width: 54, height: 54, flexShrink: 0 }}
                 disabled={sending}
                 onClick={async () => {
                   setSending(true);
-                  const ok = await onSend({ img: sticker.img, fileName: `${sticker.id}.svg`, fileType: "sticker" });
+                  const ok = await onSend({ text: sticker, fileType: "emoji" });
                   setSending(false);
                   if (ok) setShowStickerPicker(false);
                 }}
               >
-                <img src={sticker.img} alt={sticker.title} style={{ width: 34, height: 34, borderRadius: 10 }} />
+                <span style={{ fontSize: 24, lineHeight: 1 }}>{sticker}</span>
               </button>
             ))}
           </div>
@@ -2103,11 +2131,7 @@ function ProfileScreen({
         <button className="btn-primary" onClick={onOpenCreate}>
           Создать оффер
         </button>
-        {me.is_admin && (
-          <button className="btn-ghost" onClick={onOpenAdmin}>
-            Админка
-          </button>
-        )}
+        {me.is_admin && <button className="btn-ghost" onClick={onOpenAdmin}>Админка</button>}
       </div>
 
       <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
@@ -2330,6 +2354,7 @@ function AdminSheet({
   const [stats, setStats] = useState({ users: 0, offers: 0, orders: 0, reviews: 0, banned: 0, pending: 0 });
   const [lookupId, setLookupId] = useState("");
   const [foundUser, setFoundUser] = useState<User | null>(null);
+  const [foundOrderUsers, setFoundOrderUsers] = useState<{ buyer: User | null; seller: User | null; orderId: string } | null>(null);
   const [latestUsers, setLatestUsers] = useState<User[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
@@ -2392,6 +2417,7 @@ function AdminSheet({
 
   const selectUser = (user: User | null) => {
     setFoundUser(user);
+    setFoundOrderUsers(null);
     setBanReason(user?.ban_reason || "");
     setStarsAdjust("0");
     setRobuxAdjust("0");
@@ -2409,6 +2435,24 @@ function AdminSheet({
   const searchUser = async () => {
     if (!lookupId.trim()) return;
     const clean = lookupId.trim();
+    if (clean.startsWith("ord_")) {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("id, buyer:users!buyer_uid(*), seller:users!seller_uid(*)")
+        .eq("id", clean)
+        .maybeSingle();
+      if (order) {
+        const buyer = (order as { buyer?: User | User[] | null }).buyer;
+        const seller = (order as { seller?: User | User[] | null }).seller;
+        setFoundOrderUsers({
+          orderId: clean,
+          buyer: Array.isArray(buyer) ? buyer[0] || null : buyer || null,
+          seller: Array.isArray(seller) ? seller[0] || null : seller || null,
+        });
+        setFoundUser(null);
+        return;
+      }
+    }
     const query = /^\d+$/.test(clean)
       ? supabase.from("users").select("*").eq("marketplace_id", Number(clean))
       : supabase.from("users").select("*").eq("username", clean.replace(/^@/, ""));
@@ -2574,7 +2618,7 @@ function AdminSheet({
   };
 
   return (
-    <Sheet onClose={onClose} maxWidth={760}>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))", background: "#0B0907" }}>
       <SectionTitle>Админка маркетплейса</SectionTitle>
       {loading && <Spinner />}
       {!loading && (
@@ -2609,14 +2653,53 @@ function AdminSheet({
           </div>
 
           <div className="panel" style={{ padding: 14, marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Поиск по Market ID или username</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Поиск по Market ID, username или Order ID</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <input className="inp" value={lookupId} onChange={(e) => setLookupId(e.target.value)} placeholder="Например: 12 или @nickname" />
+              <input className="inp" value={lookupId} onChange={(e) => setLookupId(e.target.value)} placeholder="Например: 12, @nickname или ord_..." />
               <button className="btn-primary" onClick={searchUser}>
                 Найти
               </button>
             </div>
           </div>
+
+          {foundOrderUsers && (
+            <div className="panel" style={{ padding: 14, marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 10 }}>Участники заказа {foundOrderUsers.orderId}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {foundOrderUsers.buyer && (
+                  <button className="btn-ghost" onClick={() => selectUser(foundOrderUsers.buyer)}>
+                    Покупатель: @{getUsername(foundOrderUsers.buyer)}
+                  </button>
+                )}
+                {foundOrderUsers.seller && (
+                  <button className="btn-ghost" onClick={() => selectUser(foundOrderUsers.seller)}>
+                    Продавец: @{getUsername(foundOrderUsers.seller)}
+                  </button>
+                )}
+                {foundOrderUsers.buyer && foundOrderUsers.seller && (
+                  <button
+                    className="btn-primary"
+                    onClick={async () => {
+                      const buyer = foundOrderUsers.buyer;
+                      const seller = foundOrderUsers.seller;
+                      if (!buyer || !seller) return;
+                      selectUser(buyer);
+                      setFoundUser(buyer);
+                      setInspectedDialogUser(seller);
+                      const { data } = await supabase
+                        .from("messages")
+                        .select("*")
+                        .or(`and(from_uid.eq.${buyer.id},to_uid.eq.${seller.id}),and(from_uid.eq.${seller.id},to_uid.eq.${buyer.id})`)
+                        .order("created_at", { ascending: true });
+                      setDialogMessages((data || []) as Message[]);
+                    }}
+                  >
+                    Открыть их чат
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           <SectionTitle>Новые пользователи</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
@@ -2868,7 +2951,7 @@ function AdminSheet({
           </div>
         </>
       )}
-    </Sheet>
+    </div>
   );
 }
 
@@ -2893,30 +2976,34 @@ function TabBar({
   unread,
   pendingOrders,
   onCreate,
+  isAdmin,
 }: {
   tab: string;
   setTab: (tab: string) => void;
   unread: number;
   pendingOrders: number;
   onCreate: () => void;
+  isAdmin?: boolean;
 }) {
-  const NavIcon = ({ name, active }: { name: "home" | "chat" | "plus" | "orders" | "profile"; active: boolean }) => {
+  const NavIcon = ({ name, active }: { name: "home" | "chat" | "plus" | "orders" | "profile" | "admin"; active: boolean }) => {
     const color = active ? "#000" : "#fff";
     const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
     if (name === "home") return <svg {...common}><path d="M3 10.8 12 4l9 6.8" /><path d="M5.5 10.5V20h13V10.5" /></svg>;
     if (name === "chat") return <svg {...common}><path d="M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" /></svg>;
     if (name === "plus") return <svg {...common}><path d="M12 5v14" /><path d="M5 12h14" /></svg>;
     if (name === "orders") return <svg {...common}><path d="M7 6h13l-1.3 7.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.6L5 3H3" /><circle cx="10" cy="19" r="1.4" /><circle cx="17" cy="19" r="1.4" /></svg>;
+    if (name === "admin") return <svg {...common}><path d="M12 3 4.5 6v5.2c0 4.8 3.2 9 7.5 10.8 4.3-1.8 7.5-6 7.5-10.8V6L12 3Z" /><path d="M9.5 12 11 13.5 14.5 10" /></svg>;
     return <svg {...common}><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>;
   };
 
-  const items = [
+  const items: Array<{ id: string; label: string; icon: "home" | "chat" | "plus" | "orders" | "profile" | "admin"; badge?: number; action?: () => void }> = [
     { id: "home", label: "Главная", icon: "home" as const },
     { id: "chats", label: "Чаты", icon: "chat" as const, badge: unread },
     { id: "create", label: "Создать", icon: "plus" as const, action: onCreate },
     { id: "orders", label: "Заказы", icon: "orders" as const, badge: pendingOrders },
     { id: "profile", label: "Профиль", icon: "profile" as const },
   ];
+  if (isAdmin) items.push({ id: "admin", label: "Админ", icon: "admin" as const });
 
   return (
     <div style={{ display: "flex", borderTop: `1px solid ${T.line}`, background: "#000", minHeight: 72, paddingBottom: "env(safe-area-inset-bottom, 0px)", flexShrink: 0 }}>
@@ -2992,7 +3079,6 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
   const [autoContent, setAutoContent] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "ok" | "err" } | null>(null);
@@ -3407,13 +3493,16 @@ export default function App() {
             showToast={showToast}
             onOpenOffer={setSelectedOffer}
             onOpenCreate={() => setShowCreate(true)}
-            onOpenAdmin={() => setShowAdmin(true)}
+            onOpenAdmin={() => setTab("admin")}
             onUserUpdated={setMe}
           />
         )}
+        {!chatUser && tab === "admin" && me.is_admin && (
+          <AdminSheet me={me} onClose={() => setTab("profile")} onUserUpdated={setMe} onOpenChat={openChat} showToast={showToast} />
+        )}
       </div>
 
-      {!chatUser && <TabBar tab={tab} setTab={setTab} unread={unread} pendingOrders={pendingOrders} onCreate={() => setShowCreate(true)} />}
+      {!chatUser && <TabBar tab={tab} setTab={setTab} unread={unread} pendingOrders={pendingOrders} onCreate={() => setShowCreate(true)} isAdmin={Boolean(me.is_admin)} />}
 
       {selectedOffer && (
         <OfferSheet
@@ -3456,8 +3545,6 @@ export default function App() {
           }}
         />
       )}
-
-      {showAdmin && me.is_admin && <AdminSheet me={me} onClose={() => setShowAdmin(false)} onUserUpdated={setMe} onOpenChat={openChat} showToast={showToast} />}
 
       {showSupport && me && <SupportSheet me={me} onClose={() => setShowSupport(false)} onSubmit={submitSupportRequest} />}
 
