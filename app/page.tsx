@@ -144,6 +144,12 @@ const PROFILE_GRADIENTS = [
   ["#1C3048", "#244E6C"],
   ["#352213", "#7D4B18"],
   ["#17352B", "#274B5A"],
+  ["#2A1635", "#5F2D91"],
+  ["#30160D", "#7B2626"],
+  ["#101C2B", "#224B72"],
+  ["#1C1A30", "#40326C"],
+  ["#18261F", "#2C6B57"],
+  ["#2A1B12", "#8C5A23"],
 ];
 const MIN_OFFER_PRICE_STARS = 5;
 const PREMIUM_PRICE_STARS = 1000;
@@ -186,6 +192,14 @@ const OFFER_QUIZ = [
     options: ["Ничего", "Только предупреждение", "Ограничение доступа или бан на маркете"],
     correct: 2,
   },
+] as const;
+const ROLE_PRESETS = [
+  { label: "Снять префикс", badge_label: null, badge_icon: null, badge_color: null },
+  { label: "Админ", badge_label: "Админ", badge_icon: "🛡️", badge_color: "#D4A843" },
+  { label: "Тех админ", badge_label: "Тех админ", badge_icon: "🧠", badge_color: "#5A8FC4" },
+  { label: "Модератор", badge_label: "Модератор", badge_icon: "🔨", badge_color: "#4E9E6E" },
+  { label: "Саппорт", badge_label: "Саппорт", badge_icon: "💬", badge_color: "#FF8DA1" },
+  { label: "Разработчик", badge_label: "Разработчик", badge_icon: "💻", badge_color: "#C6B3FF" },
 ] as const;
 const CHAT_STICKERS = [
   { id: "mono_r", title: "RoWorth", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%23080808'/><rect x='8' y='8' width='104' height='104' rx='24' fill='none' stroke='%23ffffff' stroke-opacity='.2'/><text x='60' y='73' text-anchor='middle' font-family='Arial' font-size='56' font-weight='700' fill='white'>R</text></svg>" },
@@ -319,6 +333,28 @@ function getProfileScreenBackground(user: User | null | undefined) {
   const from = user?.theme_color || "#120F0A";
   const to = user?.theme_color_2 || "#080705";
   return `radial-gradient(circle at top right, rgba(212,168,67,.12), transparent 32%), linear-gradient(180deg, ${from}, ${to})`;
+}
+
+function RoleBadge({ user }: { user: User | null | undefined }) {
+  if (!user?.badge_label) return null;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "3px 8px",
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 700,
+        background: `${user.badge_color || T.gold}20`,
+        border: `1px solid ${user.badge_color || T.gold}`,
+        color: user.badge_color || T.gold2,
+      }}
+    >
+      {user.badge_icon || "✅"} {user.badge_label}
+    </span>
+  );
 }
 
 function Spinner() {
@@ -773,11 +809,7 @@ function OfferSheet({
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ fontWeight: 700 }}>@{getUsername(seller)}</span>
                 {seller.verified && <span className="blue-badge">Проверен</span>}
-                {seller.badge_label && (
-                  <span className="gold-badge">
-                    {seller.badge_icon || "✅"} {seller.badge_label}
-                  </span>
-                )}
+                <RoleBadge user={seller} />
               </div>
               <div style={{ color: T.text2, fontSize: 12, marginTop: 4 }}>
                 Market ID #{seller.marketplace_id || "—"} • Отзывов: {seller.review_count || 0} • Продаж: {seller.sales || 0}
@@ -1115,11 +1147,7 @@ function UserProfileSheet({
                 @{getUsername(user)}
               </div>
               {user.verified && <span className="blue-badge">Проверен</span>}
-              {user.badge_label && (
-                <span className="gold-badge">
-                  {user.badge_icon || "✅"} {user.badge_label}
-                </span>
-              )}
+              <RoleBadge user={user} />
             </div>
             <div style={{ fontSize: 12, color: T.text2, marginTop: 6 }}>
               Market ID #{user.marketplace_id || "—"} • Продаж: {user.sales || 0} • Отзывов: {user.review_count || 0}
@@ -1128,7 +1156,7 @@ function UserProfileSheet({
         </div>
         {user.bio && <div className="panel" style={{ padding: 14, color: T.text2, lineHeight: 1.7 }}>{user.bio}</div>}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(88px,1fr))", gap: 10 }}>
           {[
             { label: "Офферы", value: offers.length },
             { label: "Рейтинг", value: user.rating || 0 },
@@ -1195,6 +1223,7 @@ function HomeScreen({
   const [kindFilter, setKindFilter] = useState<OfferKind | "ALL">("ALL");
   const [currencyFilter, setCurrencyFilter] = useState<Currency | "ALL">("ALL");
   const [sort, setSort] = useState<"new" | "sales" | "price_asc" | "price_desc">("new");
+  const [compactHeader, setCompactHeader] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -1241,7 +1270,17 @@ function HomeScreen({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ padding: "18px 16px 12px", borderBottom: `1px solid ${T.line}` }}>
+      <div
+        style={{
+          padding: "18px 16px 12px",
+          borderBottom: `1px solid ${T.line}`,
+          background: "rgba(8,7,5,.96)",
+          backdropFilter: "blur(12px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 5,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <div>
             <div className="title" style={{ fontSize: 26 }}>
@@ -1252,32 +1291,40 @@ function HomeScreen({
           <StarsBadge value={me.stars} />
         </div>
 
-        <input className="inp" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по товарам и услугам..." />
+        {!compactHeader && (
+          <>
+            <input className="inp" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по товарам и услугам..." />
 
-        <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
-          {[{ label: "Все", value: "ALL" }, ...Object.entries(KIND_LABELS).map(([value, label]) => ({ label, value }))].map((item) => (
-            <button key={item.value} className={`pill${kindFilter === item.value ? " active" : ""}`} onClick={() => setKindFilter(item.value as OfferKind | "ALL")}>
-              {item.label}
-            </button>
-          ))}
-        </div>
+            <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
+              {[{ label: "Все", value: "ALL" }, ...Object.entries(KIND_LABELS).map(([value, label]) => ({ label, value }))].map((item) => (
+                <button key={item.value} className={`pill${kindFilter === item.value ? " active" : ""}`} onClick={() => setKindFilter(item.value as OfferKind | "ALL")}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-          <select className="inp" value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as Currency | "ALL")}>
-            <option value="ALL">Любая валюта</option>
-            <option value="STARS">Stars</option>
-            <option value="ROBUX">Robux</option>
-          </select>
-          <select className="inp" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-            <option value="new">Сначала новые</option>
-            <option value="sales">По продажам</option>
-            <option value="price_asc">Цена по возрастанию</option>
-            <option value="price_desc">Цена по убыванию</option>
-          </select>
-        </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+              <select className="inp" value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as Currency | "ALL")}>
+                <option value="ALL">Любая валюта</option>
+                <option value="STARS">Stars</option>
+                <option value="ROBUX">Robux</option>
+              </select>
+              <select className="inp" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+                <option value="new">Сначала новые</option>
+                <option value="sales">По продажам</option>
+                <option value="price_asc">Цена по возрастанию</option>
+                <option value="price_desc">Цена по убыванию</option>
+              </select>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="scroll" style={{ flex: 1, padding: 16 }}>
+      <div
+        className="scroll"
+        style={{ flex: 1, padding: 16 }}
+        onScroll={(event) => setCompactHeader(event.currentTarget.scrollTop > 48)}
+      >
         <div
           className="card"
           style={{
@@ -1365,7 +1412,7 @@ function ChatsScreen({
   }, [me.id]);
 
   return (
-    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: 90, background: getProfileScreenBackground(me) }}>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
       <SectionTitle
         right={
           <button className="btn-ghost" onClick={onOpenSupport}>
@@ -1880,7 +1927,7 @@ function OrdersScreen({
           </div>
           <textarea className="inp" rows={5} value={reviewText} onChange={(e) => setReviewText(e.target.value.slice(0, 200))} placeholder="Напиши короткий отзыв..." />
           <div style={{ color: T.text3, fontSize: 12, marginTop: 8 }}>{reviewText.length}/200</div>
-          <button className="btn-primary" style={{ width: "100%", marginTop: 14 }} onClick={submitReview} disabled={savingReview}>
+          <button className="btn-primary" style={{ width: "100%", marginTop: 14, position: "sticky", bottom: 0 }} onClick={submitReview} disabled={savingReview}>
             {savingReview ? <Spinner /> : "Сохранить отзыв"}
           </button>
         </Sheet>
@@ -1995,11 +2042,12 @@ function ProfileScreen({
         {me.plan !== "FREE" && <span className="gold-badge">{me.plan}</span>}
         {me.verified && <span className="blue-badge">Проверен</span>}
         {me.market_banned && <span className="red-badge">Заблокирован</span>}
+        <RoleBadge user={me} />
       </div>
 
       {me.bio && <div className="panel" style={{ padding: 14, color: T.text2, lineHeight: 1.7, marginBottom: 14 }}>{me.bio}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(88px,1fr))", gap: 10, marginBottom: 16 }}>
         {[
           { label: "Stars", value: me.stars || 0 },
           { label: "Robux", value: me.robux || 0 },
@@ -2016,7 +2064,7 @@ function ProfileScreen({
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
         <button className="btn-ghost" onClick={() => setEditing(true)}>
           Редактировать
         </button>
@@ -2188,7 +2236,7 @@ function ProfileScreen({
                 Расширенная кастомизация профиля открывается после покупки Premium за {PREMIUM_PRICE_STARS} Stars.
               </div>
             )}
-            <button className="btn-primary" onClick={saveProfile} disabled={saving}>
+            <button className="btn-primary" style={{ width: "100%", position: "sticky", bottom: 0 }} onClick={saveProfile} disabled={saving}>
               {saving ? <Spinner /> : "Сохранить"}
             </button>
           </div>
@@ -2202,11 +2250,13 @@ function AdminSheet({
   me,
   onClose,
   onUserUpdated,
+  onOpenChat,
   showToast,
 }: {
   me: User;
   onClose: () => void;
   onUserUpdated: (user: User) => void;
+  onOpenChat: (user: User) => void;
   showToast: (message: string, type?: "ok" | "err") => void;
 }) {
   const [stats, setStats] = useState({ users: 0, offers: 0, orders: 0, reviews: 0, banned: 0, pending: 0 });
@@ -2217,13 +2267,18 @@ function AdminSheet({
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [banReason, setBanReason] = useState("");
   const [adminMessage, setAdminMessage] = useState("");
+  const [badgeDraft, setBadgeDraft] = useState({ label: "", icon: "", color: T.gold });
   const [starsAdjust, setStarsAdjust] = useState("0");
   const [robuxAdjust, setRobuxAdjust] = useState("0");
+  const [supportUsers, setSupportUsers] = useState<User[]>([]);
+  const [userDialogs, setUserDialogs] = useState<Array<{ user: User; last: Message }>>([]);
+  const [dialogMessages, setDialogMessages] = useState<Message[]>([]);
+  const [inspectedDialogUser, setInspectedDialogUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
-    const [users, offers, orders, reviews, banned, pending, latest, recentOrdersData, recentReviewsData] = await Promise.all([
+    const [users, offers, orders, reviews, banned, pending, latest, recentOrdersData, recentReviewsData, supportMessagesData] = await Promise.all([
       supabase.from("users").select("id", { count: "exact", head: true }),
       supabase.from("offers").select("id", { count: "exact", head: true }),
       supabase.from("orders").select("id", { count: "exact", head: true }),
@@ -2233,6 +2288,7 @@ function AdminSheet({
       supabase.from("users").select("*").order("created_at", { ascending: false }).limit(8),
       supabase.from("orders").select("*, buyer:users!buyer_uid(*), seller:users!seller_uid(*)").order("created_at", { ascending: false }).limit(8),
       supabase.from("reviews").select("*, buyer:users!buyer_uid(*)").order("created_at", { ascending: false }).limit(8),
+      supabase.from("messages").select("from_user:users!from_uid(*)").eq("file_type", "system").like("text", "[Тикет поддержки]%").order("created_at", { ascending: false }).limit(20),
     ]);
 
     setStats({
@@ -2246,6 +2302,12 @@ function AdminSheet({
     setLatestUsers((latest.data || []) as User[]);
     setRecentOrders((recentOrdersData.data || []) as Order[]);
     setRecentReviews((recentReviewsData.data || []) as Review[]);
+    const uniqueSupportUsers = new Map<string, User>();
+    ((supportMessagesData.data || []) as unknown as Array<{ from_user?: User | User[] | null }>).forEach((row) => {
+      const fromUser = Array.isArray(row.from_user) ? row.from_user[0] : row.from_user;
+      if (fromUser) uniqueSupportUsers.set(fromUser.id, fromUser);
+    });
+    setSupportUsers([...uniqueSupportUsers.values()]);
     setLoading(false);
   }, []);
 
@@ -2259,6 +2321,14 @@ function AdminSheet({
     setStarsAdjust("0");
     setRobuxAdjust("0");
     setAdminMessage("");
+    setBadgeDraft({
+      label: user?.badge_label || "",
+      icon: user?.badge_icon || "",
+      color: user?.badge_color || T.gold,
+    });
+    setUserDialogs([]);
+    setDialogMessages([]);
+    setInspectedDialogUser(null);
   };
 
   const searchUser = async () => {
@@ -2313,6 +2383,39 @@ function AdminSheet({
     setAdminMessage("");
     showToast("Админ-сообщение отправлено.");
   };
+
+  const loadUserDialogs = useCallback(async () => {
+    if (!foundUser) return;
+    const { data } = await supabase
+      .from("messages")
+      .select("*, from_user:users!from_uid(*), to_user:users!to_uid(*)")
+      .or(`from_uid.eq.${foundUser.id},to_uid.eq.${foundUser.id}`)
+      .order("created_at", { ascending: true });
+
+    const map = new Map<string, { user: User; last: Message }>();
+    ((data || []) as Array<Message & { from_user?: User | null; to_user?: User | null }>).forEach((message) => {
+      const otherUser = message.from_uid === foundUser.id ? message.to_user : message.from_user;
+      if (!otherUser || otherUser.id === foundUser.id) return;
+      map.set(otherUser.id, { user: otherUser, last: message });
+    });
+    setUserDialogs([...map.values()].sort((a, b) => new Date(b.last.created_at).getTime() - new Date(a.last.created_at).getTime()));
+  }, [foundUser]);
+
+  const inspectDialog = useCallback(async (otherUser: User) => {
+    if (!foundUser) return;
+    setInspectedDialogUser(otherUser);
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .or(`and(from_uid.eq.${foundUser.id},to_uid.eq.${otherUser.id}),and(from_uid.eq.${otherUser.id},to_uid.eq.${foundUser.id})`)
+      .order("created_at", { ascending: true });
+    setDialogMessages((data || []) as Message[]);
+  }, [foundUser]);
+
+  useEffect(() => {
+    if (!foundUser) return;
+    loadUserDialogs();
+  }, [foundUser, loadUserDialogs]);
 
   const refundOrder = async (order: Order) => {
     setWorking(true);
@@ -2451,6 +2554,41 @@ function AdminSheet({
               </div>
 
               <div className="panel" style={{ padding: 14 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10 }}>Префикс и роль</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  {ROLE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      className="btn-ghost"
+                      disabled={working}
+                      onClick={() =>
+                        updateUser({
+                          badge_label: preset.badge_label,
+                          badge_icon: preset.badge_icon,
+                          badge_color: preset.badge_color,
+                        })
+                      }
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr .8fr .8fr", gap: 10 }}>
+                  <input className="inp" value={badgeDraft.label} onChange={(e) => setBadgeDraft((current) => ({ ...current, label: e.target.value.slice(0, 24) }))} placeholder="Своя роль" />
+                  <input className="inp" value={badgeDraft.icon} onChange={(e) => setBadgeDraft((current) => ({ ...current, icon: e.target.value.slice(0, 4) }))} placeholder="Иконка" />
+                  <input className="inp" value={badgeDraft.color} onChange={(e) => setBadgeDraft((current) => ({ ...current, color: e.target.value.slice(0, 20) }))} placeholder="#D4A843" />
+                </div>
+                <button
+                  className="btn-primary"
+                  style={{ width: "100%", marginTop: 10 }}
+                  disabled={working}
+                  onClick={() => updateUser({ badge_label: badgeDraft.label || null, badge_icon: badgeDraft.icon || null, badge_color: badgeDraft.color || null })}
+                >
+                  Сохранить префикс
+                </button>
+              </div>
+
+              <div className="panel" style={{ padding: 14 }}>
                 <div style={{ fontWeight: 700, marginBottom: 10 }}>Баланс</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <input className="inp" value={starsAdjust} onChange={(e) => setStarsAdjust(e.target.value)} placeholder="Изменить Stars, например +100" />
@@ -2477,8 +2615,75 @@ function AdminSheet({
                 >
                   Отправить [Админ]
                 </button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                  <button className="btn-ghost" disabled={!foundUser} onClick={() => foundUser && onOpenChat(foundUser)}>
+                    Открыть чат с пользователем
+                  </button>
+                  <button className="btn-ghost" disabled={!foundUser} onClick={loadUserDialogs}>
+                    Обновить диалоги
+                  </button>
+                </div>
+              </div>
+
+              <div className="panel" style={{ padding: 14 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10 }}>Диалоги пользователя</div>
+                {userDialogs.length === 0 && <div style={{ color: T.text3 }}>У пользователя пока нет доступных диалогов.</div>}
+                {userDialogs.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {userDialogs.map((dialog) => (
+                      <button
+                        key={dialog.user.id}
+                        className="btn-ghost"
+                        style={{ justifyContent: "space-between" }}
+                        onClick={() => inspectDialog(dialog.user)}
+                      >
+                        <span>@{getUsername(dialog.user)}</span>
+                        <span style={{ color: T.text3, fontSize: 12 }}>{formatTime(dialog.last.created_at)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {inspectedDialogUser && (
+                  <div className="panel" style={{ padding: 12, marginTop: 12 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                      Просмотр: @{getUsername(foundUser)} ↔ @{getUsername(inspectedDialogUser)}
+                    </div>
+                    <div className="scroll" style={{ maxHeight: 260, display: "flex", flexDirection: "column", gap: 8 }}>
+                      {dialogMessages.map((message) => (
+                        <div key={message.id} className="panel" style={{ padding: 10 }}>
+                          <div style={{ color: T.text3, fontSize: 11, marginBottom: 6 }}>
+                            {message.from_uid === foundUser.id ? `@${getUsername(foundUser)}` : `@${getUsername(inspectedDialogUser)}`} • {formatTime(message.created_at)}
+                          </div>
+                          <div style={{ color: T.text2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{message.text || (message.img ? "[вложение]" : "Пустое сообщение")}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+          )}
+
+          {supportUsers.length > 0 && (
+            <>
+              <SectionTitle>Заявки в поддержку</SectionTitle>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {supportUsers.map((user) => (
+                  <button
+                    key={user.id}
+                    className="panel"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 12, background: T.bg2, color: T.text, cursor: "pointer" }}
+                    onClick={() => {
+                      selectUser(user);
+                      onOpenChat(user);
+                    }}
+                  >
+                    <span>@{getUsername(user)}</span>
+                    <span style={{ color: T.text3, fontSize: 12 }}>Открыть чат</span>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           <SectionTitle>Последние заказы</SectionTitle>
@@ -2673,6 +2878,11 @@ export default function App() {
     }
   }, []);
 
+  const refreshUnread = useCallback(async (userId: string) => {
+    const { count } = await supabase.from("messages").select("id", { count: "exact", head: true }).eq("to_uid", userId).eq("read", false);
+    setUnread(count || 0);
+  }, []);
+
   const authUser = useCallback(async (telegramUser: TelegramUser) => {
     const userId = String(telegramUser.id);
     const { data, error } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
@@ -2722,8 +2932,7 @@ export default function App() {
     if (!me) return;
 
     const loadUnread = async () => {
-      const { count } = await supabase.from("messages").select("id", { count: "exact", head: true }).eq("to_uid", me.id).eq("read", false);
-      setUnread(count || 0);
+      await refreshUnread(me.id);
     };
 
     const loadPendingOrders = async () => {
@@ -2748,7 +2957,7 @@ export default function App() {
       supabase.removeChannel(unreadChannel);
       supabase.removeChannel(orderChannel);
     };
-  }, [me]);
+  }, [me, refreshUnread]);
 
   const openChat = useCallback(async (user: User) => {
     if (!me) return;
@@ -2764,7 +2973,8 @@ export default function App() {
 
     setMessages((data || []) as Message[]);
     await supabase.from("messages").update({ read: true }).eq("to_uid", me.id).eq("from_uid", user.id);
-  }, [me]);
+    await refreshUnread(me.id);
+  }, [me, refreshUnread]);
 
   useEffect(() => {
     if (!me || !chatUser) return;
@@ -2779,9 +2989,10 @@ export default function App() {
 
         if (!matches) return;
 
-        setMessages((current) => [...current, message]);
+        setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
         if (message.to_uid === me.id) {
           await supabase.from("messages").update({ read: true }).eq("id", message.id);
+          await refreshUnread(me.id);
         }
       })
       .subscribe();
@@ -2789,7 +3000,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chatUser, me]);
+  }, [chatUser, me, refreshUnread]);
 
   const sendMessage = useCallback(async (payload: { text?: string; img?: string | null; fileName?: string | null; fileType?: string | null }) => {
     if (!me || !chatUser) return false;
@@ -2802,18 +3013,24 @@ export default function App() {
       return false;
     }
 
-    const { error } = await supabase.from("messages").insert({
+    const optimisticMessage: Message = {
       id: `msg_${now}`,
       from_uid: me.id,
       to_uid: chatUser.id,
       text: payload.text || "",
       img: payload.img || null,
       read: false,
+      created_at: new Date(now).toISOString(),
       file_name: payload.fileName || null,
       file_type: payload.fileType || null,
-    });
+    };
+
+    setMessages((current) => [...current, optimisticMessage]);
+
+    const { error } = await supabase.from("messages").insert(optimisticMessage);
 
     if (error) {
+      setMessages((current) => current.filter((message) => message.id !== optimisticMessage.id));
       showToast(error.message || "Не удалось отправить сообщение.", "err");
       return false;
     }
@@ -3101,7 +3318,7 @@ export default function App() {
         />
       )}
 
-      {showAdmin && me.is_admin && <AdminSheet me={me} onClose={() => setShowAdmin(false)} onUserUpdated={setMe} showToast={showToast} />}
+      {showAdmin && me.is_admin && <AdminSheet me={me} onClose={() => setShowAdmin(false)} onUserUpdated={setMe} onOpenChat={openChat} showToast={showToast} />}
 
       {showSupport && me && <SupportSheet me={me} onClose={() => setShowSupport(false)} onSubmit={submitSupportRequest} />}
 
