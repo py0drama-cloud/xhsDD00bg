@@ -102,6 +102,8 @@ type Review = {
   buyer?: User | null;
 };
 
+type ChatMode = "regular" | "support";
+
 type SupportReason = "ORDER" | "PAYMENT" | "ACCOUNT" | "OTHER";
 type SupportRole = "BUYER" | "SELLER";
 
@@ -301,6 +303,16 @@ function canCustomizeProfile(user: User) {
 
 function isSystemMessage(message: Message) {
   return message.id.startsWith("sys_") || message.id.startsWith("admin_") || message.file_type === "system";
+}
+
+function isSupportMessage(message: Message) {
+  return message.file_type === "support";
+}
+
+function parseReviewPrice(text: string) {
+  const match = text.match(/^\[#price=(\d+)\s([A-Z]+)\]\s*/);
+  if (!match) return null;
+  return { price: Number(match[1]), cur: match[2], text: text.replace(match[0], "") };
 }
 
 function readImageAsDataUrl(file: File) {
@@ -1233,12 +1245,21 @@ function UserProfileSheet({
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {reviews.map((review) => (
               <div key={review.id} className="panel" style={{ padding: 14 }}>
+                {(() => {
+                  const priceMeta = parseReviewPrice(review.text || "");
+                  const cleanText = priceMeta ? priceMeta.text : review.text;
+                  return (
+                    <>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
                   <div style={{ fontWeight: 700 }}>@{getUsername(review.buyer)}</div>
                   <div style={{ color: T.gold }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</div>
                 </div>
-                <div style={{ color: T.text2, lineHeight: 1.7 }}>{review.text || "Без текста"}</div>
+                {priceMeta && <div style={{ color: T.text3, fontSize: 12, marginBottom: 6 }}>Сумма сделки: {formatPrice(priceMeta.price, priceMeta.cur)}</div>}
+                <div style={{ color: T.text2, lineHeight: 1.7 }}>{cleanText || "Без текста"}</div>
                 <div style={{ color: T.text3, fontSize: 12, marginTop: 8 }}>{formatDate(review.created_at)}</div>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -1414,10 +1435,12 @@ function HomeScreen({
 function ChatsScreen({
   me,
   onOpenChat,
+  onOpenSupportChat,
   onOpenSupport,
 }: {
   me: User;
   onOpenChat: (user: User) => void;
+  onOpenSupportChat: () => void;
   onOpenSupport: () => void;
 }) {
   const [conversations, setConversations] = useState<Array<{ user: User; last: Message; unread: number }>>([]);
@@ -1434,6 +1457,7 @@ function ChatsScreen({
       const map = new Map<string, { user: User; last: Message; unread: number }>();
 
       ((data || []) as Array<Message & { from_user: User; to_user: User }>).forEach((message) => {
+        if (isSupportMessage(message)) return;
         const otherId = message.from_uid === me.id ? message.to_uid : message.from_uid;
         const otherUser = message.from_uid === me.id ? message.to_user : message.from_user;
         if (!otherUser || otherId === me.id) return;
@@ -1465,9 +1489,14 @@ function ChatsScreen({
     <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
       <SectionTitle
         right={
-          <button className="btn-ghost" onClick={onOpenSupport}>
-            Помощь
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn-ghost" onClick={onOpenSupportChat}>
+              Чат саппорта
+            </button>
+            <button className="btn-ghost" onClick={onOpenSupport}>
+              Заявка
+            </button>
+          </div>
         }
       >
         Сообщения
@@ -1535,6 +1564,7 @@ function ChatView({
   me,
   partner,
   messages,
+  mode = "regular",
   onBack,
   onSend,
   onOpenProfile,
@@ -1542,6 +1572,7 @@ function ChatView({
   me: User;
   partner: User;
   messages: Message[];
+  mode?: ChatMode;
   onBack: () => void;
   onSend: (payload: { text?: string; img?: string | null; fileName?: string | null; fileType?: string | null }) => Promise<boolean>;
   onOpenProfile: (user: User) => void;
@@ -1568,8 +1599,8 @@ function ChatView({
         >
           <Avatar user={partner} size={46} />
           <div style={{ textAlign: "left" }}>
-            <div style={{ fontWeight: 700 }}>@{getUsername(partner)}</div>
-            <div style={{ fontSize: 12, color: T.text3 }}>Market ID #{partner.marketplace_id || "—"}</div>
+            <div style={{ fontWeight: 700 }}>{mode === "support" ? `Саппорт • @${getUsername(partner)}` : `@${getUsername(partner)}`}</div>
+            <div style={{ fontSize: 12, color: T.text3 }}>{mode === "support" ? "Отдельный чат поддержки" : `Market ID #${partner.marketplace_id || "—"}`}</div>
           </div>
         </button>
       </div>
@@ -1578,6 +1609,7 @@ function ChatView({
         {messages.map((message) => {
           const mine = message.from_uid === me.id;
           const system = isSystemMessage(message);
+          const support = isSupportMessage(message);
           if (system) {
             return (
               <div key={message.id} style={{ display: "flex", justifyContent: "center" }}>
@@ -1606,10 +1638,16 @@ function ChatView({
                   maxWidth: "78%",
                   padding: "12px 14px",
                   borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  background: mine ? "rgba(212,168,67,.12)" : T.bg2,
-                  border: `1px solid ${mine ? "rgba(212,168,67,.25)" : T.line}`,
+                  background: support ? "rgba(90,143,196,.12)" : mine ? "rgba(212,168,67,.12)" : T.bg2,
+                  border: `1px solid ${support ? "rgba(90,143,196,.35)" : mine ? "rgba(212,168,67,.25)" : T.line}`,
+                  boxShadow: support ? "0 0 0 1px rgba(90,143,196,.15) inset" : "none",
                 }}
               >
+                {support && (
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.blue, marginBottom: 6 }}>
+                    {mine ? "Ответ саппорта" : "Сообщение саппорта"}
+                  </div>
+                )}
                 {message.img ? (
                   <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block" }} />
                 ) : null}
@@ -1803,23 +1841,7 @@ function OrdersScreen({
     };
   }, [load, me.id]);
 
-  const creditSeller = async (order: Order) => {
-    const currencyField = order.cur === "STARS" ? "stars" : "robux";
-    const { data: seller } = await supabase.from("users").select("stars,robux,worth,sales").eq("id", order.seller_uid).single();
-    if (!seller) return;
-
-    await supabase
-      .from("users")
-      .update({
-        [currencyField]: Number(seller[currencyField as "stars" | "robux"] || 0) + order.price,
-        worth: Number(seller.worth || 0) + order.price,
-        sales: Number(seller.sales || 0) + 1,
-      })
-      .eq("id", order.seller_uid);
-  };
-
   const confirmOrder = async (order: Order) => {
-    await creditSeller(order);
     await supabase.from("orders").update({ status: "confirmed" }).eq("id", order.id);
     const text = `Заказ #${shortOrderId(order.id)} подтвержден продавцом. Теперь ты можешь оставить отзыв в разделе заказов.`;
     await supabase.from("messages").insert({
@@ -1851,7 +1873,7 @@ function OrdersScreen({
       seller_uid: reviewing.seller_uid,
       buyer_uid: me.id,
       rating: reviewRating,
-      text: reviewText.trim(),
+      text: `[#price=${reviewing.price} ${reviewing.cur}] ${reviewText.trim()}`,
     });
 
     if (error) {
@@ -2215,14 +2237,23 @@ function ProfileScreen({
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {reviews.map((review) => (
               <div key={review.id} className="panel" style={{ padding: 14 }}>
+                {(() => {
+                  const priceMeta = parseReviewPrice(review.text || "");
+                  const cleanText = priceMeta ? priceMeta.text : review.text;
+                  return (
+                    <>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
                   <div style={{ fontWeight: 700 }}>@{getUsername(review.buyer)}</div>
                   <div style={{ color: T.gold }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</div>
                 </div>
-                <div style={{ color: T.text2, lineHeight: 1.7 }}>{review.text || "Без текста"}</div>
+                {priceMeta && <div style={{ color: T.text3, fontSize: 12, marginBottom: 6 }}>Сумма сделки: {formatPrice(priceMeta.price, priceMeta.cur)}</div>}
+                <div style={{ color: T.text2, lineHeight: 1.7 }}>{cleanText || "Без текста"}</div>
                 <div style={{ color: T.text3, fontSize: 12, marginTop: 8 }}>
                   Review ID: {review.id} • Заказ: {review.order_id}
                 </div>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -2343,12 +2374,14 @@ function AdminSheet({
   onClose,
   onUserUpdated,
   onOpenChat,
+  onOpenSupportChat,
   showToast,
 }: {
   me: User;
   onClose: () => void;
   onUserUpdated: (user: User) => void;
   onOpenChat: (user: User) => void;
+  onOpenSupportChat: (user: User) => void;
   showToast: (message: string, type?: "ok" | "err") => void;
 }) {
   const [stats, setStats] = useState({ users: 0, offers: 0, orders: 0, reviews: 0, banned: 0, pending: 0 });
@@ -2383,7 +2416,7 @@ function AdminSheet({
       supabase.from("users").select("*").order("created_at", { ascending: false }).limit(8),
       supabase.from("orders").select("*, buyer:users!buyer_uid(*), seller:users!seller_uid(*)").order("created_at", { ascending: false }).limit(8),
       supabase.from("reviews").select("*, buyer:users!buyer_uid(*)").order("created_at", { ascending: false }).limit(8),
-      supabase.from("messages").select("id,text,created_at,from_user:users!from_uid(*)").eq("file_type", "system").like("text", "[Тикет поддержки]%").order("created_at", { ascending: false }).limit(30),
+      supabase.from("messages").select("id,text,created_at,from_user:users!from_uid(*)").eq("file_type", "support").like("text", "[Тикет поддержки]%").order("created_at", { ascending: false }).limit(30),
     ]);
 
     setStats({
@@ -2897,8 +2930,8 @@ function AdminSheet({
                         >
                           Открыть пользователя
                         </button>
-                        <button className="btn-ghost" onClick={() => onOpenChat(ticket.user)}>
-                          Перейти в чат
+                        <button className="btn-ghost" onClick={() => onOpenSupportChat(ticket.user)}>
+                          Перейти в чат саппорта
                         </button>
                       </div>
                     </div>
@@ -3076,6 +3109,7 @@ export default function App() {
   const [tab, setTab] = useState("home");
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [chatUser, setChatUser] = useState<User | null>(null);
+  const [chatMode, setChatMode] = useState<ChatMode>("regular");
   const [messages, setMessages] = useState<Message[]>([]);
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -3157,7 +3191,8 @@ export default function App() {
     if (!me) return;
 
     const loadUnread = async () => {
-      await refreshUnread(me.id);
+      const { count } = await supabase.from("messages").select("id", { count: "exact", head: true }).eq("to_uid", me.id).eq("read", false).neq("file_type", "support");
+      setUnread(count || 0);
     };
 
     const loadPendingOrders = async () => {
@@ -3187,6 +3222,7 @@ export default function App() {
   const openChat = useCallback(async (user: User) => {
     if (!me) return;
     setChatUser(user);
+    setChatMode("regular");
     setTab("chats");
     lastMessageAtRef.current = 0;
 
@@ -3194,12 +3230,31 @@ export default function App() {
       .from("messages")
       .select("*")
       .or(`and(from_uid.eq.${me.id},to_uid.eq.${user.id}),and(from_uid.eq.${user.id},to_uid.eq.${me.id})`)
+      .neq("file_type", "support")
       .order("created_at", { ascending: true });
 
     setMessages((data || []) as Message[]);
-    await supabase.from("messages").update({ read: true }).eq("to_uid", me.id).eq("from_uid", user.id);
+    await supabase.from("messages").update({ read: true }).eq("to_uid", me.id).eq("from_uid", user.id).neq("file_type", "support");
     await refreshUnread(me.id);
   }, [me, refreshUnread]);
+
+  const openSupportChat = useCallback(async (user: User) => {
+    if (!me) return;
+    setChatUser(user);
+    setChatMode("support");
+    setTab("chats");
+    lastMessageAtRef.current = 0;
+
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .or(`and(from_uid.eq.${me.id},to_uid.eq.${user.id}),and(from_uid.eq.${user.id},to_uid.eq.${me.id})`)
+      .eq("file_type", "support")
+      .order("created_at", { ascending: true });
+
+    setMessages((data || []) as Message[]);
+    await supabase.from("messages").update({ read: true }).eq("to_uid", me.id).eq("from_uid", user.id).eq("file_type", "support");
+  }, [me]);
 
   useEffect(() => {
     if (!me || !chatUser) return;
@@ -3213,11 +3268,12 @@ export default function App() {
           (message.from_uid === chatUser.id && message.to_uid === me.id);
 
         if (!matches) return;
+        if ((chatMode === "support") !== isSupportMessage(message)) return;
 
         setMessages((current) => (current.some((item) => item.id === message.id) ? current : [...current, message]));
         if (message.to_uid === me.id) {
           await supabase.from("messages").update({ read: true }).eq("id", message.id);
-          await refreshUnread(me.id);
+          if (chatMode === "regular") await refreshUnread(me.id);
         }
       })
       .subscribe();
@@ -3225,7 +3281,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chatUser, me, refreshUnread]);
+  }, [chatMode, chatUser, me, refreshUnread]);
 
   const sendMessage = useCallback(async (payload: { text?: string; img?: string | null; fileName?: string | null; fileType?: string | null }) => {
     if (!me || !chatUser) return false;
@@ -3247,7 +3303,7 @@ export default function App() {
       read: false,
       created_at: new Date(now).toISOString(),
       file_name: payload.fileName || null,
-      file_type: payload.fileType || null,
+      file_type: payload.fileType || (chatMode === "support" ? "support" : null),
     };
 
     setMessages((current) => [...current, optimisticMessage]);
@@ -3264,12 +3320,12 @@ export default function App() {
     const chatUrl = `${getAppBaseUrl()}?chat=${me.id}`;
     await notifyTelegram(
       chatUser.id,
-      `Вам пришло новое сообщение в чате от @${getUsername(me)}.\n\n${payload.img ? "Изображение или стикер" : (payload.text || "").slice(0, 120)}`,
+      `${chatMode === "support" ? "Новое сообщение в чате поддержки" : `Вам пришло новое сообщение в чате от @${getUsername(me)}.`}\n\n${payload.img ? "Изображение" : (payload.text || "").slice(0, 120)}`,
       "Перейти в чат",
       chatUrl
     );
     return true;
-  }, [chatUser, me, notifyTelegram, showToast]);
+  }, [chatMode, chatUser, me, notifyTelegram, showToast]);
 
   const submitSupportRequest = useCallback(
     async (payload: { reason: SupportReason; nickname: string; orderId: string; role: SupportRole; text: string }) => {
@@ -3280,6 +3336,7 @@ export default function App() {
         showToast("Не удалось найти модераторов. Попробуй позже.", "err");
         return;
       }
+      const supportAdmin = admins[0] as User;
 
       const reasonLabel = SUPPORT_REASONS.find((item) => item.value === payload.reason)?.label || payload.reason;
       const ticketText =
@@ -3291,15 +3348,15 @@ export default function App() {
         `Market ID: ${me.marketplace_id || "—"}\n\n` +
         `${payload.text}`;
 
-      const rows = admins.map((admin) => ({
-        id: `support_${admin.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      const rows = [{
+        id: `support_${supportAdmin.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         from_uid: me.id,
-        to_uid: admin.id,
+        to_uid: supportAdmin.id,
         text: ticketText,
         img: null,
         read: false,
-        file_type: "system",
-      }));
+        file_type: "support",
+      }];
 
       const { error: insertError } = await supabase.from("messages").insert(rows);
       if (insertError) {
@@ -3319,9 +3376,10 @@ export default function App() {
       );
 
       setShowSupport(false);
+      openSupportChat(supportAdmin);
       showToast("Заявка отправлена модераторам.");
     },
-    [me, notifyTelegram, showToast]
+    [me, notifyTelegram, openSupportChat, showToast]
   );
 
   useEffect(() => {
@@ -3355,6 +3413,19 @@ export default function App() {
 
     const { data: updatedBuyer } = await supabase.from("users").update({ stars: nextStars, robux: nextRobux }).eq("id", me.id).select().single();
     if (updatedBuyer) setMe(updatedBuyer as User);
+
+    const currencyField = offer.cur === "STARS" ? "stars" : "robux";
+    const { data: seller } = await supabase.from("users").select("stars,robux,worth,sales").eq("id", offer.uid).single();
+    if (seller) {
+      await supabase
+        .from("users")
+        .update({
+          [currencyField]: Number(seller[currencyField as "stars" | "robux"] || 0) + offer.price,
+          worth: Number(seller.worth || 0) + offer.price,
+          sales: Number(seller.sales || 0) + 1,
+        })
+        .eq("id", offer.uid);
+    }
 
     const orderId = `ord_${Date.now()}`;
     const nextStatus: OrderStatus = offer.auto ? "confirmed" : "pending";
@@ -3398,22 +3469,18 @@ export default function App() {
     );
 
     if (offer.auto) {
-      const currencyField = offer.cur === "STARS" ? "stars" : "robux";
-      const { data: seller } = await supabase.from("users").select("stars,robux,worth,sales").eq("id", offer.uid).single();
-      if (seller) {
-        await supabase
-          .from("users")
-          .update({
-            [currencyField]: Number(seller[currencyField as "stars" | "robux"] || 0) + offer.price,
-            worth: Number(seller.worth || 0) + offer.price,
-            sales: Number(seller.sales || 0) + 1,
-          })
-          .eq("id", offer.uid);
-      }
-      setAutoContent(offer.auto_content || "Контент для автовыдачи не указан.");
+      await supabase.from("messages").insert({
+        id: `sys_auto_${Date.now()}`,
+        from_uid: offer.uid,
+        to_uid: me.id,
+        text: `Автовыдача по заказу #${shortOrderId(orderId)}\n\n${offer.auto_content || "Контент для автовыдачи не указан."}`,
+        img: null,
+        read: false,
+        file_type: "system",
+      });
       showToast("Покупка завершена, товар выдан автоматически.");
     } else {
-      showToast("Покупка создана, продавец уже получил уведомление.");
+      showToast("Покупка создана, продавец уже получил уведомление и оплату.");
     }
   }, [me, notifyTelegram, showToast]);
 
@@ -3478,6 +3545,7 @@ export default function App() {
             me={me}
             partner={chatUser}
             messages={messages}
+            mode={chatMode}
             onBack={() => setChatUser(null)}
             onSend={sendMessage}
             onOpenProfile={(user) => setProfileUser(user)}
@@ -3485,7 +3553,15 @@ export default function App() {
         ) : null}
 
         {!chatUser && tab === "home" && <HomeScreen me={me} onOpenOffer={setSelectedOffer} />}
-        {!chatUser && tab === "chats" && <ChatsScreen me={me} onOpenChat={openChat} onOpenSupport={() => setShowSupport(true)} />}
+        {!chatUser && tab === "chats" && <ChatsScreen me={me} onOpenChat={openChat} onOpenSupportChat={async () => {
+          const { data } = await supabase.from("users").select("*").eq("is_admin", true).order("created_at", { ascending: true }).limit(1);
+          const supportAdmin = (data?.[0] || null) as User | null;
+          if (supportAdmin) {
+            openSupportChat(supportAdmin);
+          } else {
+            showToast("Саппорт пока недоступен.", "err");
+          }
+        }} onOpenSupport={() => setShowSupport(true)} />}
         {!chatUser && tab === "orders" && <OrdersScreen me={me} showToast={showToast} notifyTelegram={notifyTelegram} />}
         {!chatUser && tab === "profile" && (
           <ProfileScreen
@@ -3498,7 +3574,7 @@ export default function App() {
           />
         )}
         {!chatUser && tab === "admin" && me.is_admin && (
-          <AdminSheet me={me} onClose={() => setTab("profile")} onUserUpdated={setMe} onOpenChat={openChat} showToast={showToast} />
+          <AdminSheet me={me} onClose={() => setTab("profile")} onUserUpdated={setMe} onOpenChat={openChat} onOpenSupportChat={openSupportChat} showToast={showToast} />
         )}
       </div>
 
