@@ -873,6 +873,7 @@ function CreateOfferSheet({
   const [acceptedRules, setAcceptedRules] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<number[]>(() => OFFER_QUIZ.map(() => -1));
   const [quizPassed, setQuizPassed] = useState(false);
+  const bannerFileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setType(OFFER_TYPES[kind][0]);
@@ -1062,7 +1063,25 @@ function CreateOfferSheet({
                 Минимальная цена: {MIN_OFFER_PRICE_STARS} Stars
               </div>
             </div>
-            <input className="inp" value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Ссылка на баннер/обложку" />
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <input className="inp" style={{ flex: 1, minWidth: 220 }} value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Ссылка или data-url баннера" />
+              <button className="btn-ghost" type="button" onClick={() => bannerFileRef.current?.click()}>
+                Загрузить баннер
+              </button>
+            </div>
+            <input
+              ref={bannerFileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const img = await readImageAsDataUrl(file);
+                setBanner(img);
+                event.target.value = "";
+              }}
+            />
             <label className="panel" style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>Автовыдача</div>
@@ -1323,7 +1342,10 @@ function HomeScreen({
       <div
         className="scroll"
         style={{ flex: 1, padding: 16 }}
-        onScroll={(event) => setCompactHeader(event.currentTarget.scrollTop > 48)}
+        onScroll={(event) => {
+          const nextCompact = event.currentTarget.scrollTop > 48;
+          setCompactHeader((current) => (current === nextCompact ? current : nextCompact));
+        }}
       >
         <div
           className="card"
@@ -1498,6 +1520,7 @@ function ChatView({
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -1573,26 +1596,33 @@ function ChatView({
 
       <div style={{ borderTop: `1px solid ${T.line}`, padding: 12, paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-          {CHAT_STICKERS.map((sticker) => (
-            <button
-              key={sticker.id}
-              className="btn-ghost"
-              style={{ padding: 6, width: 54, height: 54 }}
-              disabled={sending}
-              onClick={async () => {
-                setSending(true);
-                const ok = await onSend({ img: sticker.img, fileName: `${sticker.id}.svg`, fileType: "sticker" });
-                setSending(false);
-                if (!ok) return;
-              }}
-            >
-              <img src={sticker.img} alt={sticker.title} style={{ width: 34, height: 34, borderRadius: 10 }} />
-            </button>
-          ))}
+          <button className={`pill${showStickerPicker ? " active" : ""}`} disabled={sending} onClick={() => setShowStickerPicker((current) => !current)}>
+            Стикеры
+          </button>
           <button className="btn-ghost" disabled={sending} onClick={() => fileRef.current?.click()}>
-            Картинка
+            Фото из галереи
           </button>
         </div>
+        {showStickerPicker && (
+          <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 10 }}>
+            {CHAT_STICKERS.map((sticker) => (
+              <button
+                key={sticker.id}
+                className="btn-ghost"
+                style={{ padding: 6, width: 54, height: 54, flexShrink: 0 }}
+                disabled={sending}
+                onClick={async () => {
+                  setSending(true);
+                  const ok = await onSend({ img: sticker.img, fileName: `${sticker.id}.svg`, fileType: "sticker" });
+                  setSending(false);
+                  if (ok) setShowStickerPicker(false);
+                }}
+              >
+                <img src={sticker.img} alt={sticker.title} style={{ width: 34, height: 34, borderRadius: 10 }} />
+              </button>
+            ))}
+          </div>
+        )}
         <div style={{ display: "flex", gap: 10, alignItems: "stretch", flexWrap: "wrap" }}>
           <textarea className="inp" rows={2} value={text} onChange={(e) => setText(e.target.value.slice(0, 400))} placeholder="Сообщение..." style={{ flex: 1, minWidth: 220 }} />
           <button
@@ -1955,6 +1985,8 @@ function ProfileScreen({
   const [reviews, setReviews] = useState<Review[]>([]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement | null>(null);
+  const bannerFileRef = useRef<HTMLInputElement | null>(null);
   const [draft, setDraft] = useState({
     bio: me.bio || "",
     avatar_url: me.avatar_url || "",
@@ -2177,11 +2209,47 @@ function ProfileScreen({
           <SectionTitle>Редактировать профиль</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <textarea className="inp" rows={5} value={draft.bio} onChange={(e) => setDraft((current) => ({ ...current, bio: e.target.value.slice(0, 400) }))} placeholder="Расскажи о себе" />
-            <input className="inp" value={draft.avatar_url} onChange={(e) => setDraft((current) => ({ ...current, avatar_url: e.target.value }))} placeholder="Ссылка на аватар" />
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <input className="inp" style={{ flex: 1, minWidth: 220 }} value={draft.avatar_url} onChange={(e) => setDraft((current) => ({ ...current, avatar_url: e.target.value }))} placeholder="Ссылка или data-url аватара" />
+              <button className="btn-ghost" type="button" onClick={() => avatarFileRef.current?.click()}>
+                Загрузить аватар
+              </button>
+            </div>
+            <input
+              ref={avatarFileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const img = await readImageAsDataUrl(file);
+                setDraft((current) => ({ ...current, avatar_url: img }));
+                event.target.value = "";
+              }}
+            />
             {canCustomizeProfile(me) ? (
               <>
                 <input className="inp" value={draft.avatar_gif_url} onChange={(e) => setDraft((current) => ({ ...current, avatar_gif_url: e.target.value }))} placeholder="GIF-аватар" />
-                <input className="inp" value={draft.profile_banner} onChange={(e) => setDraft((current) => ({ ...current, profile_banner: e.target.value }))} placeholder="Ссылка на баннер" />
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <input className="inp" style={{ flex: 1, minWidth: 220 }} value={draft.profile_banner} onChange={(e) => setDraft((current) => ({ ...current, profile_banner: e.target.value }))} placeholder="Ссылка или data-url баннера" />
+                  <button className="btn-ghost" type="button" onClick={() => bannerFileRef.current?.click()}>
+                    Загрузить баннер
+                  </button>
+                </div>
+                <input
+                  ref={bannerFileRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    const img = await readImageAsDataUrl(file);
+                    setDraft((current) => ({ ...current, profile_banner: img }));
+                    event.target.value = "";
+                  }}
+                />
                 <div className="panel" style={{ padding: 12 }}>
                   <div style={{ color: T.text2, fontSize: 12, marginBottom: 8 }}>Цвет ника</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2271,9 +2339,11 @@ function AdminSheet({
   const [starsAdjust, setStarsAdjust] = useState("0");
   const [robuxAdjust, setRobuxAdjust] = useState("0");
   const [supportUsers, setSupportUsers] = useState<User[]>([]);
+  const [supportTickets, setSupportTickets] = useState<Array<{ id: string; user: User; text: string; created_at: string }>>([]);
   const [userDialogs, setUserDialogs] = useState<Array<{ user: User; last: Message }>>([]);
   const [dialogMessages, setDialogMessages] = useState<Message[]>([]);
   const [inspectedDialogUser, setInspectedDialogUser] = useState<User | null>(null);
+  const [adminTab, setAdminTab] = useState<"users" | "support">("users");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
 
@@ -2288,7 +2358,7 @@ function AdminSheet({
       supabase.from("users").select("*").order("created_at", { ascending: false }).limit(8),
       supabase.from("orders").select("*, buyer:users!buyer_uid(*), seller:users!seller_uid(*)").order("created_at", { ascending: false }).limit(8),
       supabase.from("reviews").select("*, buyer:users!buyer_uid(*)").order("created_at", { ascending: false }).limit(8),
-      supabase.from("messages").select("from_user:users!from_uid(*)").eq("file_type", "system").like("text", "[Тикет поддержки]%").order("created_at", { ascending: false }).limit(20),
+      supabase.from("messages").select("id,text,created_at,from_user:users!from_uid(*)").eq("file_type", "system").like("text", "[Тикет поддержки]%").order("created_at", { ascending: false }).limit(30),
     ]);
 
     setStats({
@@ -2303,11 +2373,16 @@ function AdminSheet({
     setRecentOrders((recentOrdersData.data || []) as Order[]);
     setRecentReviews((recentReviewsData.data || []) as Review[]);
     const uniqueSupportUsers = new Map<string, User>();
-    ((supportMessagesData.data || []) as unknown as Array<{ from_user?: User | User[] | null }>).forEach((row) => {
+    const nextTickets: Array<{ id: string; user: User; text: string; created_at: string }> = [];
+    ((supportMessagesData.data || []) as unknown as Array<{ id: string; text: string; created_at: string; from_user?: User | User[] | null }>).forEach((row) => {
       const fromUser = Array.isArray(row.from_user) ? row.from_user[0] : row.from_user;
-      if (fromUser) uniqueSupportUsers.set(fromUser.id, fromUser);
+      if (fromUser) {
+        uniqueSupportUsers.set(fromUser.id, fromUser);
+        nextTickets.push({ id: row.id, user: fromUser, text: row.text, created_at: row.created_at });
+      }
     });
     setSupportUsers([...uniqueSupportUsers.values()]);
+    setSupportTickets(nextTickets);
     setLoading(false);
   }, []);
 
@@ -2382,6 +2457,42 @@ function AdminSheet({
     setWorking(false);
     setAdminMessage("");
     showToast("Админ-сообщение отправлено.");
+  };
+
+  const injectAdminMessageIntoDialog = async () => {
+    if (!foundUser || !inspectedDialogUser || !adminMessage.trim()) {
+      showToast("Сначала выбери пользователя, его чат и текст сообщения.", "err");
+      return;
+    }
+    setWorking(true);
+    const prefix = me.badge_label || "Админ";
+    const payload = {
+      id: `admin_dialog_${Date.now()}`,
+      from_uid: foundUser.id,
+      to_uid: inspectedDialogUser.id,
+      text: `[${prefix}] ${getDisplayName(me)}\n${adminMessage.trim()}`,
+      img: null,
+      read: false,
+      file_type: "system",
+      created_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("messages").insert({
+      id: payload.id,
+      from_uid: payload.from_uid,
+      to_uid: payload.to_uid,
+      text: payload.text,
+      img: payload.img,
+      read: payload.read,
+      file_type: payload.file_type,
+    });
+    setWorking(false);
+    if (error) {
+      showToast(error.message || "Не удалось вмешаться в чат.", "err");
+      return;
+    }
+    setDialogMessages((current) => [...current, payload as Message]);
+    setAdminMessage("");
+    showToast("Сообщение администрации добавлено в выбранный чат.");
   };
 
   const loadUserDialogs = useCallback(async () => {
@@ -2468,6 +2579,17 @@ function AdminSheet({
       {loading && <Spinner />}
       {!loading && (
         <>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+            <button className={`pill${adminTab === "users" ? " active" : ""}`} onClick={() => setAdminTab("users")}>
+              Пользователи и чаты
+            </button>
+            <button className={`pill${adminTab === "support" ? " active" : ""}`} onClick={() => setAdminTab("support")}>
+              Центр поддержки
+            </button>
+          </div>
+
+          {adminTab === "users" && (
+            <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
             {[
               { label: "Пользователи", value: stats.users },
@@ -2658,31 +2780,48 @@ function AdminSheet({
                         </div>
                       ))}
                     </div>
+                    <button className="btn-primary" style={{ width: "100%", marginTop: 10 }} disabled={working} onClick={injectAdminMessageIntoDialog}>
+                      Отправить в этот чат как администрация
+                    </button>
                   </div>
                 )}
               </div>
             </div>
           )}
+            </>
+          )}
 
-          {supportUsers.length > 0 && (
+          {adminTab === "support" && (
             <>
-              <SectionTitle>Заявки в поддержку</SectionTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                {supportUsers.map((user) => (
-                  <button
-                    key={user.id}
-                    className="panel"
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 12, background: T.bg2, color: T.text, cursor: "pointer" }}
-                    onClick={() => {
-                      selectUser(user);
-                      onOpenChat(user);
-                    }}
-                  >
-                    <span>@{getUsername(user)}</span>
-                    <span style={{ color: T.text3, fontSize: 12 }}>Открыть чат</span>
-                  </button>
-                ))}
-              </div>
+              <SectionTitle>Центр поддержки</SectionTitle>
+              {supportTickets.length === 0 && <div style={{ color: T.text3, marginBottom: 16 }}>Пока нет заявок в поддержку.</div>}
+              {supportTickets.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                  {supportTickets.map((ticket) => (
+                    <div key={ticket.id} className="panel" style={{ padding: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                        <div style={{ fontWeight: 700 }}>@{getUsername(ticket.user)}</div>
+                        <div style={{ color: T.text3, fontSize: 12 }}>{formatDate(ticket.created_at)} {formatTime(ticket.created_at)}</div>
+                      </div>
+                      <div style={{ color: T.text2, whiteSpace: "pre-wrap", lineHeight: 1.6, marginBottom: 10 }}>{ticket.text}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          className="btn-primary"
+                          onClick={() => {
+                            selectUser(ticket.user);
+                            setAdminTab("users");
+                          }}
+                        >
+                          Открыть пользователя
+                        </button>
+                        <button className="btn-ghost" onClick={() => onOpenChat(ticket.user)}>
+                          Перейти в чат
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
