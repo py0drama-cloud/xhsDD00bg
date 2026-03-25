@@ -102,6 +102,9 @@ type Review = {
   buyer?: User | null;
 };
 
+type SupportReason = "ORDER" | "PAYMENT" | "ACCOUNT" | "OTHER";
+type SupportRole = "BUYER" | "SELLER";
+
 const KIND_LABELS: Record<OfferKind, string> = {
   PRODUCT: "Товар",
   SERVICE: "Услуга",
@@ -144,7 +147,46 @@ const PROFILE_GRADIENTS = [
 ];
 const MIN_OFFER_PRICE_STARS = 5;
 const PREMIUM_PRICE_STARS = 1000;
-const MESSAGE_COOLDOWN_MS = 30_000;
+const MESSAGE_COOLDOWN_MS = 1200;
+const OFFER_RULES_STORAGE_KEY = "roworth_offer_rules_passed";
+const SUPPORT_REASONS: Array<{ value: SupportReason; label: string }> = [
+  { value: "ORDER", label: "Проблема с заказом" },
+  { value: "PAYMENT", label: "Проблема с оплатой" },
+  { value: "ACCOUNT", label: "Проблема с аккаунтом" },
+  { value: "OTHER", label: "Другое" },
+];
+const OFFER_RULES = [
+  "Запрещено публиковать скам, краденый контент и чужие работы без разрешения.",
+  "Описание товара должно честно объяснять, что получает покупатель.",
+  "Для автовыдачи указывай только рабочий и безопасный контент.",
+  "Нарушение правил может привести к бану на маркете без возврата доступа.",
+];
+const OFFER_QUIZ = [
+  {
+    id: "stolen",
+    question: "Можно ли выставлять чужой Roblox-контент без разрешения автора?",
+    options: ["Да, если изменить название", "Нет, это запрещено", "Да, если цена низкая"],
+    correct: 1,
+  },
+  {
+    id: "description",
+    question: "Каким должно быть описание оффера?",
+    options: ["Коротким и непонятным", "Любым, главное быстрее опубликовать", "Честным и понятным для покупателя"],
+    correct: 2,
+  },
+  {
+    id: "delivery",
+    question: "Что делать, если включена автовыдача?",
+    options: ["Оставить поле пустым", "Указать рабочий контент для выдачи", "Написать только 'в ЛС'"],
+    correct: 1,
+  },
+  {
+    id: "ban",
+    question: "Что может случиться за обман покупателей?",
+    options: ["Ничего", "Только предупреждение", "Ограничение доступа или бан на маркете"],
+    correct: 2,
+  },
+] as const;
 const CHAT_STICKERS = [
   { id: "mono_r", title: "RoWorth", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%23080808'/><rect x='8' y='8' width='104' height='104' rx='24' fill='none' stroke='%23ffffff' stroke-opacity='.2'/><text x='60' y='73' text-anchor='middle' font-family='Arial' font-size='56' font-weight='700' fill='white'>R</text></svg>" },
   { id: "mono_code", title: "Code", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%230b0b0b'/><path d='M44 38 26 60l18 22' stroke='%23fff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='m76 38 18 22-18 22' stroke='%23fff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M66 28 54 92' stroke='%23fff' stroke-width='8' stroke-linecap='round'/></svg>" },
@@ -269,6 +311,16 @@ function getAppBaseUrl() {
   return process.env.NEXT_PUBLIC_APP_URL || "";
 }
 
+function getOfferRulesStorageKey(userId: string) {
+  return `${OFFER_RULES_STORAGE_KEY}:${userId}`;
+}
+
+function getProfileScreenBackground(user: User | null | undefined) {
+  const from = user?.theme_color || "#120F0A";
+  const to = user?.theme_color_2 || "#080705";
+  return `radial-gradient(circle at top right, rgba(212,168,67,.12), transparent 32%), linear-gradient(180deg, ${from}, ${to})`;
+}
+
 function Spinner() {
   return (
     <div
@@ -386,13 +438,15 @@ function Sheet({
           position: "relative",
           width: "100%",
           maxWidth,
-          maxHeight: "92dvh",
+          maxHeight: "min(92dvh, calc(100dvh - 12px))",
           background: T.bg1,
           borderTopLeftRadius: 22,
           borderTopRightRadius: 22,
           border: `1px solid ${T.line2}`,
           borderBottom: "none",
           padding: 18,
+          paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
+          overscrollBehavior: "contain",
         }}
       >
         <div style={{ width: 44, height: 4, borderRadius: 999, background: T.line2, margin: "0 auto 14px" }} />
@@ -784,10 +838,41 @@ function CreateOfferSheet({
   const [auto, setAuto] = useState(false);
   const [autoContent, setAutoContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [acceptedRules, setAcceptedRules] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState<number[]>(() => OFFER_QUIZ.map(() => -1));
+  const [quizPassed, setQuizPassed] = useState(false);
 
   useEffect(() => {
     setType(OFFER_TYPES[kind][0]);
   }, [kind]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const passed = window.localStorage.getItem(getOfferRulesStorageKey(me.id)) === "1";
+    if (passed) {
+      setAcceptedRules(true);
+      setQuizPassed(true);
+    }
+  }, [me.id]);
+
+  const submitQuiz = () => {
+    if (quizAnswers.some((answer) => answer < 0)) {
+      showToast("Ответь на все вопросы теста.", "err");
+      return;
+    }
+    const passed = OFFER_QUIZ.every((item, index) => quizAnswers[index] === item.correct);
+    if (!passed) {
+      setQuizAnswers(OFFER_QUIZ.map(() => -1));
+      setAcceptedRules(false);
+      showToast("Есть ошибки. Ознакомься с правилами и пройди тест заново.", "err");
+      return;
+    }
+    setQuizPassed(true);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(getOfferRulesStorageKey(me.id), "1");
+    }
+    showToast("Тест пройден. Теперь можно публиковать оффер.");
+  };
 
   const submit = async () => {
     if (!title.trim() || !description.trim() || Number(price) < MIN_OFFER_PRICE_STARS) {
@@ -820,15 +905,41 @@ function CreateOfferSheet({
       rating: 0,
     };
 
-    const { data, error } = await supabase.from("offers").insert(payload).select("*, user:users(*)").single();
+    let response = await supabase.from("offers").insert(payload).select("*, user:users(*)").single();
+
+    if (response.error?.message?.includes("stock")) {
+      const legacyPayload = {
+        id: payload.id,
+        uid: payload.uid,
+        title: payload.title,
+        description: payload.description,
+        kind: payload.kind,
+        type: payload.type,
+        price: payload.price,
+        cur: payload.cur,
+        auto: payload.auto,
+        auto_content: payload.auto_content,
+        banner: payload.banner,
+        boosted: payload.boosted,
+        boost_end: payload.boost_end,
+        sales: payload.sales,
+        rating: payload.rating,
+      };
+      response = await supabase.from("offers").insert(legacyPayload).select("*, user:users(*)").single();
+    }
+
     setSaving(false);
 
-    if (error || !data) {
-      showToast(error?.message || "Не удалось создать предложение.", "err");
+    if (response.error || !response.data) {
+      const message =
+        response.error?.message?.includes("stock")
+          ? "В базе не хватает новой колонки stock. Прогони sql/roworth_tz_upgrade.sql в Supabase."
+          : response.error?.message || "Не удалось создать предложение.";
+      showToast(message, "err");
       return;
     }
 
-    onCreated(data as unknown as Offer);
+    onCreated(response.data as unknown as Offer);
     onClose();
     showToast("Предложение опубликовано.");
   };
@@ -837,57 +948,110 @@ function CreateOfferSheet({
     <Sheet onClose={onClose}>
       <SectionTitle>Новое предложение</SectionTitle>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input className="inp" value={title} onChange={(e) => setTitle(e.target.value.slice(0, 60))} placeholder="Название" />
-        <textarea className="inp" rows={5} value={description} onChange={(e) => setDescription(e.target.value.slice(0, 1000))} placeholder="Описание" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <select className="inp" value={kind} onChange={(e) => setKind(e.target.value as OfferKind)}>
-            {Object.entries(KIND_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select className="inp" value={type} onChange={(e) => setType(e.target.value)}>
-            {OFFER_TYPES[kind].map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <input className="inp" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))} placeholder="Цена" />
-          <input className="inp" value={stock} onChange={(e) => setStock(e.target.value.replace(/[^\d]/g, ""))} placeholder="Количество" />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <select className="inp" value={cur} onChange={(e) => setCur(e.target.value as Currency)}>
-            <option value="STARS">Stars</option>
-            <option value="ROBUX">Robux</option>
-          </select>
-          <div className="panel" style={{ padding: 12, color: T.text2, fontSize: 12 }}>
-            Минимальная цена: {MIN_OFFER_PRICE_STARS} Stars
-          </div>
-        </div>
-        <input className="inp" value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Ссылка на баннер/обложку" />
-        <label className="panel" style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>Автовыдача</div>
-            <div style={{ fontSize: 12, color: T.text2 }}>Если включена, покупатель получает контент сразу после оплаты.</div>
-          </div>
-          <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
-        </label>
-        {auto && (
-          <textarea
-            className="inp"
-            rows={4}
-            value={autoContent}
-            onChange={(e) => setAutoContent(e.target.value)}
-            placeholder="Что получит покупатель: ссылка, ключ, инструкция и т.д."
-          />
+        {!quizPassed ? (
+          <>
+            <div className="panel" style={{ padding: 14 }}>
+              <div className="title" style={{ fontSize: 18, marginBottom: 10 }}>
+                Правила публикации
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, color: T.text2, lineHeight: 1.6 }}>
+                {OFFER_RULES.map((rule) => (
+                  <div key={rule}>• {rule}</div>
+                ))}
+              </div>
+            </div>
+
+            <label className="panel" style={{ padding: 14, display: "flex", alignItems: "center", gap: 12 }}>
+              <input type="checkbox" checked={acceptedRules} onChange={(e) => setAcceptedRules(e.target.checked)} />
+              <div style={{ color: T.text2, lineHeight: 1.6 }}>Я ознакомился с правилами и понимаю, что за нарушения можно получить бан на маркете.</div>
+            </label>
+
+            {acceptedRules && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {OFFER_QUIZ.map((item, index) => (
+                  <div key={item.id} className="panel" style={{ padding: 14 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 10 }}>{index + 1}. {item.question}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {item.options.map((option, optionIndex) => (
+                        <label key={option} style={{ display: "flex", alignItems: "center", gap: 10, color: T.text2 }}>
+                          <input
+                            type="radio"
+                            name={item.id}
+                            checked={quizAnswers[index] === optionIndex}
+                            onChange={() =>
+                              setQuizAnswers((current) => current.map((answer, currentIndex) => (currentIndex === index ? optionIndex : answer)))
+                            }
+                          />
+                          <span>{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <button className="btn-primary" onClick={submitQuiz}>
+                  Пройти тест
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="panel" style={{ padding: 12, color: T.green }}>
+              Доступ к публикации открыт. Тест по правилам пройден.
+            </div>
+            <input className="inp" value={title} onChange={(e) => setTitle(e.target.value.slice(0, 60))} placeholder="Название" />
+            <textarea className="inp" rows={5} value={description} onChange={(e) => setDescription(e.target.value.slice(0, 1000))} placeholder="Описание" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+              <select className="inp" value={kind} onChange={(e) => setKind(e.target.value as OfferKind)}>
+                {Object.entries(KIND_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <select className="inp" value={type} onChange={(e) => setType(e.target.value)}>
+                {OFFER_TYPES[kind].map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+              <input className="inp" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))} placeholder="Цена" />
+              <input className="inp" inputMode="numeric" value={stock} onChange={(e) => setStock(e.target.value.replace(/[^\d]/g, ""))} placeholder="Количество" />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+              <select className="inp" value={cur} onChange={(e) => setCur(e.target.value as Currency)}>
+                <option value="STARS">Stars</option>
+                <option value="ROBUX">Robux</option>
+              </select>
+              <div className="panel" style={{ padding: 12, color: T.text2, fontSize: 12 }}>
+                Минимальная цена: {MIN_OFFER_PRICE_STARS} Stars
+              </div>
+            </div>
+            <input className="inp" value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Ссылка на баннер/обложку" />
+            <label className="panel" style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>Автовыдача</div>
+                <div style={{ fontSize: 12, color: T.text2 }}>Если включена, покупатель получает контент сразу после оплаты.</div>
+              </div>
+              <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+            </label>
+            {auto && (
+              <textarea
+                className="inp"
+                rows={4}
+                value={autoContent}
+                onChange={(e) => setAutoContent(e.target.value)}
+                placeholder="Что получит покупатель: ссылка, ключ, инструкция и т.д."
+              />
+            )}
+            <button className="btn-primary" onClick={submit} disabled={saving}>
+              {saving ? <Spinner /> : "Опубликовать"}
+            </button>
+          </>
         )}
-        <button className="btn-primary" onClick={submit} disabled={saving}>
-          {saving ? <Spinner /> : "Опубликовать"}
-        </button>
       </div>
     </Sheet>
   );
@@ -1153,9 +1317,11 @@ function HomeScreen({
 function ChatsScreen({
   me,
   onOpenChat,
+  onOpenSupport,
 }: {
   me: User;
   onOpenChat: (user: User) => void;
+  onOpenSupport: () => void;
 }) {
   const [conversations, setConversations] = useState<Array<{ user: User; last: Message; unread: number }>>([]);
   const [loading, setLoading] = useState(true);
@@ -1199,8 +1365,16 @@ function ChatsScreen({
   }, [me.id]);
 
   return (
-    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: 90 }}>
-      <SectionTitle>Сообщения</SectionTitle>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: 90, background: getProfileScreenBackground(me) }}>
+      <SectionTitle
+        right={
+          <button className="btn-ghost" onClick={onOpenSupport}>
+            Помощь
+          </button>
+        }
+      >
+        Сообщения
+      </SectionTitle>
       {loading && <Spinner />}
       {!loading && conversations.length === 0 && <div style={{ color: T.text3 }}>У тебя пока нет диалогов.</div>}
       {!loading && conversations.length > 0 && (
@@ -1350,7 +1524,7 @@ function ChatView({
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ borderTop: `1px solid ${T.line}`, padding: 12 }}>
+      <div style={{ borderTop: `1px solid ${T.line}`, padding: 12, paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
           {CHAT_STICKERS.map((sticker) => (
             <button
@@ -1372,12 +1546,12 @@ function ChatView({
             Картинка
           </button>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <textarea className="inp" rows={2} value={text} onChange={(e) => setText(e.target.value.slice(0, 400))} placeholder="Сообщение..." />
+        <div style={{ display: "flex", gap: 10, alignItems: "stretch", flexWrap: "wrap" }}>
+          <textarea className="inp" rows={2} value={text} onChange={(e) => setText(e.target.value.slice(0, 400))} placeholder="Сообщение..." style={{ flex: 1, minWidth: 220 }} />
           <button
             className="btn-primary"
             disabled={sending}
-            style={{ alignSelf: "stretch" }}
+            style={{ alignSelf: "stretch", minWidth: 130 }}
             onClick={async () => {
               if (!text.trim()) return;
               setSending(true);
@@ -1397,15 +1571,91 @@ function ChatView({
           onChange={async (event) => {
             const file = event.target.files?.[0];
             if (!file) return;
-            setSending(true);
-            const img = await readImageAsDataUrl(file);
-            await onSend({ img, fileName: file.name, fileType: file.type || "image" });
-            setSending(false);
+            try {
+              setSending(true);
+              const img = await readImageAsDataUrl(file);
+              await onSend({ img, fileName: file.name, fileType: file.type || "image" });
+            } finally {
+              setSending(false);
+            }
             event.target.value = "";
           }}
         />
       </div>
     </div>
+  );
+}
+
+function SupportSheet({
+  me,
+  onClose,
+  onSubmit,
+}: {
+  me: User;
+  onClose: () => void;
+  onSubmit: (payload: { reason: SupportReason; nickname: string; orderId: string; role: SupportRole; text: string }) => Promise<void>;
+}) {
+  const [reason, setReason] = useState<SupportReason>("ORDER");
+  const [nickname, setNickname] = useState(me.username || "");
+  const [orderId, setOrderId] = useState("");
+  const [role, setRole] = useState<SupportRole>("BUYER");
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+
+  return (
+    <Sheet onClose={onClose}>
+      <SectionTitle>Помощь и модерация</SectionTitle>
+      <div style={{ color: T.text2, fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
+        Опиши проблему, и заявка уйдет в чат модераторов. Чем подробнее форма, тем быстрее ответ.
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Что привело вас сюда?</div>
+          <select className="inp" value={reason} onChange={(e) => setReason(e.target.value as SupportReason)}>
+            {SUPPORT_REASONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Ваш ник на маркете</div>
+          <input className="inp" value={nickname} onChange={(e) => setNickname(e.target.value.slice(0, 60))} placeholder="@username" />
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Номер заказа</div>
+          <input className="inp" value={orderId} onChange={(e) => setOrderId(e.target.value.slice(0, 80))} placeholder="Если есть, укажи ID заказа" />
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Кто вы в этой ситуации?</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button className={`pill${role === "BUYER" ? " active" : ""}`} onClick={() => setRole("BUYER")}>
+              Покупатель
+            </button>
+            <button className={`pill${role === "SELLER" ? " active" : ""}`} onClick={() => setRole("SELLER")}>
+              Продавец
+            </button>
+          </div>
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Комментарий</div>
+          <textarea className="inp" rows={7} value={text} onChange={(e) => setText(e.target.value.slice(0, 1200))} placeholder="Опиши проблему подробно..." />
+        </div>
+        <button
+          className="btn-primary"
+          disabled={sending}
+          onClick={async () => {
+            if (!nickname.trim() || !text.trim()) return;
+            setSending(true);
+            await onSubmit({ reason, nickname: nickname.trim(), orderId: orderId.trim(), role, text: text.trim() });
+            setSending(false);
+          }}
+        >
+          {sending ? <Spinner /> : "Отправить заявку"}
+        </button>
+      </div>
+    </Sheet>
   );
 }
 
@@ -1531,7 +1781,7 @@ function OrdersScreen({
   const completedSellerOrders = sellerOrders.filter((order) => order.status === "confirmed");
 
   return (
-    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: 90 }}>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       <SectionTitle>Заказы</SectionTitle>
       {loading && <Spinner />}
       {!loading && sellerOrders.length === 0 && buyerOrders.length === 0 && <div style={{ color: T.text3 }}>Пока нет заказов.</div>}
@@ -1542,7 +1792,7 @@ function OrdersScreen({
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
             {pendingSellerOrders.map((order) => (
               <div key={order.id} className="panel" style={{ padding: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{order.offer_snap?.title || "Товар"}</div>
                     <div style={{ fontSize: 12, color: T.text2, marginTop: 4 }}>
@@ -1575,7 +1825,7 @@ function OrdersScreen({
                   </div>
                   <CurBadge cur={order.cur} price={order.price} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <div style={{ color: order.status === "confirmed" ? T.green : T.text2, fontSize: 13 }}>
                     {order.status === "confirmed" ? "Заказ подтвержден" : "Ожидает подтверждения"}
                   </div>
@@ -1712,7 +1962,7 @@ function ProfileScreen({
   };
 
   return (
-    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: 90 }}>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
       <div
         style={{
           height: 130,
@@ -2325,7 +2575,7 @@ function TabBar({
   ];
 
   return (
-    <div style={{ display: "flex", borderTop: `1px solid ${T.line}`, background: "#000", height: 72, flexShrink: 0 }}>
+    <div style={{ display: "flex", borderTop: `1px solid ${T.line}`, background: "#000", minHeight: 72, paddingBottom: "env(safe-area-inset-bottom, 0px)", flexShrink: 0 }}>
       {items.map((item) => {
         const active = tab === item.id;
         const handleClick = item.action || (() => setTab(item.id));
@@ -2399,6 +2649,7 @@ export default function App() {
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const [autoContent, setAutoContent] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "ok" | "err" } | null>(null);
   const [unread, setUnread] = useState(0);
@@ -2551,7 +2802,7 @@ export default function App() {
       return false;
     }
 
-    await supabase.from("messages").insert({
+    const { error } = await supabase.from("messages").insert({
       id: `msg_${now}`,
       from_uid: me.id,
       to_uid: chatUser.id,
@@ -2561,6 +2812,11 @@ export default function App() {
       file_name: payload.fileName || null,
       file_type: payload.fileType || null,
     });
+
+    if (error) {
+      showToast(error.message || "Не удалось отправить сообщение.", "err");
+      return false;
+    }
     lastMessageAtRef.current = now;
 
     const chatUrl = `${getAppBaseUrl()}?chat=${me.id}`;
@@ -2572,6 +2828,59 @@ export default function App() {
     );
     return true;
   }, [chatUser, me, notifyTelegram, showToast]);
+
+  const submitSupportRequest = useCallback(
+    async (payload: { reason: SupportReason; nickname: string; orderId: string; role: SupportRole; text: string }) => {
+      if (!me) return;
+
+      const { data: admins, error } = await supabase.from("users").select("*").eq("is_admin", true).limit(10);
+      if (error || !admins || admins.length === 0) {
+        showToast("Не удалось найти модераторов. Попробуй позже.", "err");
+        return;
+      }
+
+      const reasonLabel = SUPPORT_REASONS.find((item) => item.value === payload.reason)?.label || payload.reason;
+      const ticketText =
+        `[Тикет поддержки]\n` +
+        `Причина: ${reasonLabel}\n` +
+        `Пользователь: ${payload.nickname}\n` +
+        `Роль: ${payload.role === "BUYER" ? "Покупатель" : "Продавец"}\n` +
+        `Order ID: ${payload.orderId || "не указан"}\n` +
+        `Market ID: ${me.marketplace_id || "—"}\n\n` +
+        `${payload.text}`;
+
+      const rows = admins.map((admin) => ({
+        id: `support_${admin.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        from_uid: me.id,
+        to_uid: admin.id,
+        text: ticketText,
+        img: null,
+        read: false,
+        file_type: "system",
+      }));
+
+      const { error: insertError } = await supabase.from("messages").insert(rows);
+      if (insertError) {
+        showToast(insertError.message || "Не удалось отправить заявку.", "err");
+        return;
+      }
+
+      await Promise.all(
+        admins.map((admin) =>
+          notifyTelegram(
+            admin.id,
+            `Новая заявка в поддержку от @${getUsername(me)}\nПричина: ${reasonLabel}\nOrder ID: ${payload.orderId || "не указан"}`,
+            "Открыть маркет",
+            getAppBaseUrl()
+          )
+        )
+      );
+
+      setShowSupport(false);
+      showToast("Заявка отправлена модераторам.");
+    },
+    [me, notifyTelegram, showToast]
+  );
 
   useEffect(() => {
     if (!me) return;
@@ -2734,7 +3043,7 @@ export default function App() {
         ) : null}
 
         {!chatUser && tab === "home" && <HomeScreen me={me} onOpenOffer={setSelectedOffer} />}
-        {!chatUser && tab === "chats" && <ChatsScreen me={me} onOpenChat={openChat} />}
+        {!chatUser && tab === "chats" && <ChatsScreen me={me} onOpenChat={openChat} onOpenSupport={() => setShowSupport(true)} />}
         {!chatUser && tab === "orders" && <OrdersScreen me={me} showToast={showToast} notifyTelegram={notifyTelegram} />}
         {!chatUser && tab === "profile" && (
           <ProfileScreen
@@ -2793,6 +3102,8 @@ export default function App() {
       )}
 
       {showAdmin && me.is_admin && <AdminSheet me={me} onClose={() => setShowAdmin(false)} onUserUpdated={setMe} showToast={showToast} />}
+
+      {showSupport && me && <SupportSheet me={me} onClose={() => setShowSupport(false)} onSubmit={submitSupportRequest} />}
 
       {autoContent && (
         <Sheet onClose={() => setAutoContent(null)} maxWidth={420}>
