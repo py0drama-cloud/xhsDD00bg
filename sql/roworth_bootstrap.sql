@@ -1,4 +1,4 @@
--- RoWorth bootstrap schema for a fresh Supabase project
+﻿-- RoWorth bootstrap schema for a fresh Supabase project
 -- Run this first on an empty database.
 
 create table if not exists public.users (
@@ -33,6 +33,7 @@ create table if not exists public.offers (
   boost_end bigint not null default 0,
   sales integer not null default 0,
   rating numeric not null default 0,
+  stock integer not null default 1,
   created_at timestamptz not null default now()
 );
 
@@ -68,3 +69,5 @@ create table if not exists public.purchases (
   cur text not null default 'STARS',
   created_at timestamptz not null default now()
 );
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -57,6 +57,7 @@ type Offer = {
   boost_end: number;
   sales: number;
   rating: number;
+  stock?: number | null;
   created_at: string;
   images?: string[] | null;
   cover_index?: number | null;
@@ -71,6 +72,8 @@ type Message = {
   img: string | null;
   read: boolean;
   created_at: string;
+  file_name?: string | null;
+  file_type?: string | null;
 };
 
 type Order = {
@@ -138,6 +141,14 @@ const PROFILE_GRADIENTS = [
   ["#1C3048", "#244E6C"],
   ["#352213", "#7D4B18"],
   ["#17352B", "#274B5A"],
+];
+const MIN_OFFER_PRICE_STARS = 5;
+const PREMIUM_PRICE_STARS = 1000;
+const MESSAGE_COOLDOWN_MS = 30_000;
+const CHAT_STICKERS = [
+  { id: "mono_r", title: "RoWorth", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%23080808'/><rect x='8' y='8' width='104' height='104' rx='24' fill='none' stroke='%23ffffff' stroke-opacity='.2'/><text x='60' y='73' text-anchor='middle' font-family='Arial' font-size='56' font-weight='700' fill='white'>R</text></svg>" },
+  { id: "mono_code", title: "Code", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%230b0b0b'/><path d='M44 38 26 60l18 22' stroke='%23fff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='m76 38 18 22-18 22' stroke='%23fff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M66 28 54 92' stroke='%23fff' stroke-width='8' stroke-linecap='round'/></svg>" },
+  { id: "mono_star", title: "Premium", img: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='28' fill='%23060606'/><path d='m60 24 11 22 25 4-18 17 4 25-22-12-22 12 4-25-18-17 25-4 11-22Z' fill='%23fff'/></svg>" },
 ];
 
 const T = {
@@ -230,6 +241,23 @@ function getOfferCover(offer: Offer) {
 
 function getOfferSlotLimit(user: User) {
   return user.plan === "PREMIUM" ? 50 : 15;
+}
+
+function canCustomizeProfile(user: User) {
+  return user.plan === "PREMIUM";
+}
+
+function isSystemMessage(message: Message) {
+  return message.id.startsWith("sys_") || message.id.startsWith("admin_") || message.file_type === "system";
+}
+
+function readImageAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Не удалось прочитать файл."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function getTypeIcon(type: string) {
@@ -620,7 +648,7 @@ function OfferCard({
           <CurBadge cur={offer.cur} price={offer.price} />
         </div>
         <div style={{ fontSize: 12, color: T.text3 }}>
-          Продаж: {offer.sales || 0} • Рейтинг: {offer.rating || 0}
+          Продаж: {offer.sales || 0} • В наличии: {Math.max(0, Number(offer.stock ?? 1))}
         </div>
       </div>
     </button>
@@ -710,9 +738,13 @@ function OfferSheet({
             <div style={{ fontWeight: 700, color: T.gold }}>{offer.sales || 0}</div>
           </div>
           <div className="panel" style={{ padding: 12 }}>
-            <div style={{ fontSize: 11, color: T.text3, marginBottom: 6 }}>Создан</div>
-            <div style={{ fontWeight: 700 }}>{formatDate(offer.created_at)}</div>
+            <div style={{ fontSize: 11, color: T.text3, marginBottom: 6 }}>В наличии</div>
+            <div style={{ fontWeight: 700 }}>{Math.max(0, Number(offer.stock ?? 1))} шт.</div>
           </div>
+        </div>
+
+        <div className="panel" style={{ padding: 12, color: T.text2, fontSize: 13 }}>
+          Offer ID: {offer.id} • Создан: {formatDate(offer.created_at)}
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
@@ -721,8 +753,8 @@ function OfferSheet({
               Написать
             </button>
           )}
-          <button className="btn-primary" style={{ flex: 1 }} onClick={() => onBuy(offer)} disabled={offer.uid === me.id}>
-            {offer.uid === me.id ? "Ваш товар" : "Купить"}
+          <button className="btn-primary" style={{ flex: 1 }} onClick={() => onBuy(offer)} disabled={offer.uid === me.id || Number(offer.stock ?? 1) < 1}>
+            {offer.uid === me.id ? "Ваш товар" : Number(offer.stock ?? 1) < 1 ? "Нет в наличии" : "Купить"}
           </button>
         </div>
       </div>
@@ -747,6 +779,7 @@ function CreateOfferSheet({
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [cur, setCur] = useState<Currency>("STARS");
+  const [stock, setStock] = useState("1");
   const [banner, setBanner] = useState("");
   const [auto, setAuto] = useState(false);
   const [autoContent, setAutoContent] = useState("");
@@ -757,8 +790,13 @@ function CreateOfferSheet({
   }, [kind]);
 
   const submit = async () => {
-    if (!title.trim() || !description.trim() || Number(price) <= 0) {
-      showToast("Заполни название, описание и цену.", "err");
+    if (!title.trim() || !description.trim() || Number(price) < MIN_OFFER_PRICE_STARS) {
+      showToast(`Минимальная цена товара ${MIN_OFFER_PRICE_STARS} Stars.`, "err");
+      return;
+    }
+
+    if (Number(stock) < 1) {
+      showToast("Укажи количество товара, минимум 1 шт.", "err");
       return;
     }
 
@@ -772,6 +810,7 @@ function CreateOfferSheet({
       type,
       price: Number(price),
       cur,
+      stock: Number(stock),
       auto,
       auto_content: auto ? autoContent.trim() || null : null,
       banner: banner.trim() || null,
@@ -818,10 +857,16 @@ function CreateOfferSheet({
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <input className="inp" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))} placeholder="Цена" />
+          <input className="inp" value={stock} onChange={(e) => setStock(e.target.value.replace(/[^\d]/g, ""))} placeholder="Количество" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <select className="inp" value={cur} onChange={(e) => setCur(e.target.value as Currency)}>
             <option value="STARS">Stars</option>
             <option value="ROBUX">Robux</option>
           </select>
+          <div className="panel" style={{ padding: 12, color: T.text2, fontSize: 12 }}>
+            Минимальная цена: {MIN_OFFER_PRICE_STARS} Stars
+          </div>
         </div>
         <input className="inp" value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Ссылка на баннер/обложку" />
         <label className="panel" style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -921,10 +966,10 @@ function UserProfileSheet({
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
           {[
-            { label: "Worth", value: formatWorth(user.worth) },
             { label: "Офферы", value: offers.length },
             { label: "Рейтинг", value: user.rating || 0 },
             { label: "Отзывы", value: user.review_count || reviews.length },
+            { label: "Продажи", value: user.sales || 0 },
           ].map((item) => (
             <div key={item.label} className="panel" style={{ padding: 12, textAlign: "center" }}>
               <div className="title" style={{ color: T.gold, fontSize: 20 }}>
@@ -1227,10 +1272,12 @@ function ChatView({
   partner: User;
   messages: Message[];
   onBack: () => void;
-  onSend: (text: string) => Promise<void>;
+  onSend: (payload: { text?: string; img?: string | null; fileName?: string | null; fileType?: string | null }) => Promise<boolean>;
   onOpenProfile: (user: User) => void;
 }) {
   const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1258,6 +1305,28 @@ function ChatView({
       <div className="scroll" style={{ flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
         {messages.map((message) => {
           const mine = message.from_uid === me.id;
+          const system = isSystemMessage(message);
+          if (system) {
+            return (
+              <div key={message.id} style={{ display: "flex", justifyContent: "center" }}>
+                <div
+                  style={{
+                    maxWidth: "92%",
+                    padding: "10px 14px",
+                    borderRadius: 16,
+                    background: "rgba(255,255,255,.04)",
+                    border: `1px solid ${T.line2}`,
+                    color: T.text2,
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{message.text}</div>
+                  <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={message.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
               <div
@@ -1269,7 +1338,10 @@ function ChatView({
                   border: `1px solid ${mine ? "rgba(212,168,67,.25)" : T.line}`,
                 }}
               >
-                <div style={{ lineHeight: 1.6 }}>{message.text}</div>
+                {message.img ? (
+                  <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block" }} />
+                ) : null}
+                {message.text ? <div style={{ lineHeight: 1.6, marginTop: message.img ? 10 : 0 }}>{message.text}</div> : null}
                 <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
               </div>
             </div>
@@ -1279,20 +1351,59 @@ function ChatView({
       </div>
 
       <div style={{ borderTop: `1px solid ${T.line}`, padding: 12 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          {CHAT_STICKERS.map((sticker) => (
+            <button
+              key={sticker.id}
+              className="btn-ghost"
+              style={{ padding: 6, width: 54, height: 54 }}
+              disabled={sending}
+              onClick={async () => {
+                setSending(true);
+                const ok = await onSend({ img: sticker.img, fileName: `${sticker.id}.svg`, fileType: "sticker" });
+                setSending(false);
+                if (!ok) return;
+              }}
+            >
+              <img src={sticker.img} alt={sticker.title} style={{ width: 34, height: 34, borderRadius: 10 }} />
+            </button>
+          ))}
+          <button className="btn-ghost" disabled={sending} onClick={() => fileRef.current?.click()}>
+            Картинка
+          </button>
+        </div>
         <div style={{ display: "flex", gap: 10 }}>
           <textarea className="inp" rows={2} value={text} onChange={(e) => setText(e.target.value.slice(0, 400))} placeholder="Сообщение..." />
           <button
             className="btn-primary"
+            disabled={sending}
             style={{ alignSelf: "stretch" }}
             onClick={async () => {
               if (!text.trim()) return;
-              await onSend(text.trim());
-              setText("");
+              setSending(true);
+              const ok = await onSend({ text: text.trim() });
+              setSending(false);
+              if (ok) setText("");
             }}
           >
-            Отправить
+            {sending ? <Spinner /> : "Отправить"}
           </button>
         </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            setSending(true);
+            const img = await readImageAsDataUrl(file);
+            await onSend({ img, fileName: file.name, fileType: file.type || "image" });
+            setSending(false);
+            event.target.value = "";
+          }}
+        />
       </div>
     </div>
   );
@@ -1363,6 +1474,7 @@ function OrdersScreen({
       text,
       img: null,
       read: false,
+      file_type: "system",
     });
     await notifyTelegram(order.buyer_uid, text, "Открыть маркет", getAppBaseUrl());
     showToast("Заказ подтвержден.");
@@ -1434,7 +1546,7 @@ function OrdersScreen({
                   <div>
                     <div style={{ fontWeight: 700 }}>{order.offer_snap?.title || "Товар"}</div>
                     <div style={{ fontSize: 12, color: T.text2, marginTop: 4 }}>
-                      Заказ #{shortOrderId(order.id)} • Покупатель: @{getUsername(order.buyer)}
+                      Заказ #{shortOrderId(order.id)} • Покупатель: @{getUsername(order.buyer)} • ID: {order.id}
                     </div>
                   </div>
                   <CurBadge cur={order.cur} price={order.price} />
@@ -1458,7 +1570,7 @@ function OrdersScreen({
                   <div>
                     <div style={{ fontWeight: 700 }}>{order.offer_snap?.title || "Товар"}</div>
                     <div style={{ fontSize: 12, color: T.text2, marginTop: 4 }}>
-                      Продавец: @{getUsername(order.seller)} • Заказ #{shortOrderId(order.id)}
+                      Продавец: @{getUsername(order.seller)} • Заказ #{shortOrderId(order.id)} • ID: {order.id}
                     </div>
                   </div>
                   <CurBadge cur={order.cur} price={order.price} />
@@ -1575,12 +1687,12 @@ function ProfileScreen({
     const payload = {
       bio: draft.bio,
       avatar_url: draft.avatar_url || null,
-      avatar_gif_url: me.plan !== "FREE" ? draft.avatar_gif_url || null : null,
-      name_color: me.plan !== "FREE" ? draft.name_color || null : null,
-      name_font: me.plan !== "FREE" ? draft.name_font || "Syne" : "Syne",
-      theme_color: me.plan !== "FREE" ? draft.theme_color || null : null,
-      theme_color_2: me.plan !== "FREE" ? draft.theme_color_2 || null : null,
-      profile_banner: me.plan !== "FREE" ? draft.profile_banner || null : null,
+      avatar_gif_url: canCustomizeProfile(me) ? draft.avatar_gif_url || null : null,
+      name_color: canCustomizeProfile(me) ? draft.name_color || null : null,
+      name_font: canCustomizeProfile(me) ? draft.name_font || "Syne" : "Syne",
+      theme_color: canCustomizeProfile(me) ? draft.theme_color || null : null,
+      theme_color_2: canCustomizeProfile(me) ? draft.theme_color_2 || null : null,
+      profile_banner: canCustomizeProfile(me) ? draft.profile_banner || null : null,
     };
     const { data, error } = await supabase.from("users").update(payload).eq("id", me.id).select().single();
     setSaving(false);
@@ -1639,7 +1751,8 @@ function ProfileScreen({
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
         {[
-          { label: "Worth", value: formatWorth(me.worth) },
+          { label: "Stars", value: me.stars || 0 },
+          { label: "Robux", value: me.robux || 0 },
           { label: "Продажи", value: me.sales || 0 },
           { label: "Рейтинг", value: me.rating || 0 },
           { label: "Отзывы", value: me.review_count || reviews.length },
@@ -1665,6 +1778,52 @@ function ProfileScreen({
             Админка
           </button>
         )}
+      </div>
+
+      <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+        {me.plan !== "PREMIUM" ? (
+          <div className="panel" style={{ padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>Premium подписка</div>
+              <div style={{ color: T.text2, fontSize: 13 }}>Баннер профиля, тема, GIF-аватар и расширенная кастомизация за {PREMIUM_PRICE_STARS} Stars.</div>
+            </div>
+            <button
+              className="btn-primary"
+              onClick={async () => {
+                if (me.stars < PREMIUM_PRICE_STARS) {
+                  showToast("Недостаточно Stars для покупки Premium.", "err");
+                  return;
+                }
+                const { data } = await supabase
+                  .from("users")
+                  .update({ stars: me.stars - PREMIUM_PRICE_STARS, plan: "PREMIUM" })
+                  .eq("id", me.id)
+                  .select()
+                  .single();
+                if (data) {
+                  onUserUpdated(data as User);
+                  showToast("Premium активирован.");
+                }
+              }}
+            >
+              Купить
+            </button>
+          </div>
+        ) : (
+          <div className="panel" style={{ padding: 14, color: T.text2 }}>
+            Premium уже активен. Баннер, тема профиля и GIF-аватар доступны в редакторе профиля.
+          </div>
+        )}
+
+        <div className="panel" style={{ padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>Пополнение баланса</div>
+            <div style={{ color: T.text2, fontSize: 13 }}>Пока это временная заглушка. Позже подключим нормальную механику оплаты.</div>
+          </div>
+          <button className="btn-ghost" onClick={() => showToast("Пополнение пока в разработке. Заглушка подключена.", "ok")}>
+            Скоро
+          </button>
+        </div>
       </div>
 
       <SectionTitle right={<span style={{ color: T.text3, fontSize: 12 }}>{offers.length}/{getOfferSlotLimit(me)}</span>}>Мои предложения</SectionTitle>
@@ -1700,17 +1859,20 @@ function ProfileScreen({
       {reviews.length === 0 && <div style={{ color: T.text3 }}>Отзывов пока нет.</div>}
       {reviews.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {reviews.map((review) => (
-            <div key={review.id} className="panel" style={{ padding: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
-                <div style={{ fontWeight: 700 }}>@{getUsername(review.buyer)}</div>
-                <div style={{ color: T.gold }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</div>
+            {reviews.map((review) => (
+              <div key={review.id} className="panel" style={{ padding: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700 }}>@{getUsername(review.buyer)}</div>
+                  <div style={{ color: T.gold }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</div>
+                </div>
+                <div style={{ color: T.text2, lineHeight: 1.7 }}>{review.text || "Без текста"}</div>
+                <div style={{ color: T.text3, fontSize: 12, marginTop: 8 }}>
+                  Review ID: {review.id} • Заказ: {review.order_id}
+                </div>
               </div>
-              <div style={{ color: T.text2, lineHeight: 1.7 }}>{review.text || "Без текста"}</div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
       {editing && (
         <Sheet onClose={() => setEditing(false)}>
@@ -1718,56 +1880,64 @@ function ProfileScreen({
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <textarea className="inp" rows={5} value={draft.bio} onChange={(e) => setDraft((current) => ({ ...current, bio: e.target.value.slice(0, 400) }))} placeholder="Расскажи о себе" />
             <input className="inp" value={draft.avatar_url} onChange={(e) => setDraft((current) => ({ ...current, avatar_url: e.target.value }))} placeholder="Ссылка на аватар" />
-            <input className="inp" value={draft.avatar_gif_url} onChange={(e) => setDraft((current) => ({ ...current, avatar_gif_url: e.target.value }))} placeholder="GIF-аватар для PRO/PREMIUM" />
-            <input className="inp" value={draft.profile_banner} onChange={(e) => setDraft((current) => ({ ...current, profile_banner: e.target.value }))} placeholder="Ссылка на баннер" />
-            <div className="panel" style={{ padding: 12 }}>
-              <div style={{ color: T.text2, fontSize: 12, marginBottom: 8 }}>Цвет ника</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {PROFILE_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setDraft((current) => ({ ...current, name_color: color }))}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 999,
-                      border: `2px solid ${draft.name_color === color ? T.gold : T.line2}`,
-                      background: color,
-                      cursor: "pointer",
-                    }}
-                  />
-                ))}
+            {canCustomizeProfile(me) ? (
+              <>
+                <input className="inp" value={draft.avatar_gif_url} onChange={(e) => setDraft((current) => ({ ...current, avatar_gif_url: e.target.value }))} placeholder="GIF-аватар" />
+                <input className="inp" value={draft.profile_banner} onChange={(e) => setDraft((current) => ({ ...current, profile_banner: e.target.value }))} placeholder="Ссылка на баннер" />
+                <div className="panel" style={{ padding: 12 }}>
+                  <div style={{ color: T.text2, fontSize: 12, marginBottom: 8 }}>Цвет ника</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {PROFILE_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setDraft((current) => ({ ...current, name_color: color }))}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 999,
+                          border: `2px solid ${draft.name_color === color ? T.gold : T.line2}`,
+                          background: color,
+                          cursor: "pointer",
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <select className="inp" value={draft.name_font} onChange={(e) => setDraft((current) => ({ ...current, name_font: e.target.value }))}>
+                  {PROFILE_FONTS.map((font) => (
+                    <option key={font} value={font}>
+                      {font}
+                    </option>
+                  ))}
+                </select>
+                <div className="panel" style={{ padding: 12 }}>
+                  <div style={{ color: T.text2, fontSize: 12, marginBottom: 8 }}>Тема профиля</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {PROFILE_GRADIENTS.map(([from, to]) => {
+                      const active = draft.theme_color === from && draft.theme_color_2 === to;
+                      return (
+                        <button
+                          key={`${from}_${to}`}
+                          onClick={() => setDraft((current) => ({ ...current, theme_color: from, theme_color_2: to }))}
+                          style={{
+                            width: 48,
+                            height: 28,
+                            borderRadius: 999,
+                            border: `2px solid ${active ? T.gold : T.line2}`,
+                            background: `linear-gradient(135deg,${from},${to})`,
+                            cursor: "pointer",
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="panel" style={{ padding: 14, color: T.text2 }}>
+                Расширенная кастомизация профиля открывается после покупки Premium за {PREMIUM_PRICE_STARS} Stars.
               </div>
-            </div>
-            <select className="inp" value={draft.name_font} onChange={(e) => setDraft((current) => ({ ...current, name_font: e.target.value }))}>
-              {PROFILE_FONTS.map((font) => (
-                <option key={font} value={font}>
-                  {font}
-                </option>
-              ))}
-            </select>
-            <div className="panel" style={{ padding: 12 }}>
-              <div style={{ color: T.text2, fontSize: 12, marginBottom: 8 }}>Тема профиля</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {PROFILE_GRADIENTS.map(([from, to]) => {
-                  const active = draft.theme_color === from && draft.theme_color_2 === to;
-                  return (
-                    <button
-                      key={`${from}_${to}`}
-                      onClick={() => setDraft((current) => ({ ...current, theme_color: from, theme_color_2: to }))}
-                      style={{
-                        width: 48,
-                        height: 28,
-                        borderRadius: 999,
-                        border: `2px solid ${active ? T.gold : T.line2}`,
-                        background: `linear-gradient(135deg,${from},${to})`,
-                        cursor: "pointer",
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
+            )}
             <button className="btn-primary" onClick={saveProfile} disabled={saving}>
               {saving ? <Spinner /> : "Сохранить"}
             </button>
@@ -1793,14 +1963,17 @@ function AdminSheet({
   const [lookupId, setLookupId] = useState("");
   const [foundUser, setFoundUser] = useState<User | null>(null);
   const [latestUsers, setLatestUsers] = useState<User[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [banReason, setBanReason] = useState("");
-  const [badgeIcon, setBadgeIcon] = useState("✅");
-  const [badgeLabel, setBadgeLabel] = useState("Проверенный продавец");
+  const [adminMessage, setAdminMessage] = useState("");
+  const [starsAdjust, setStarsAdjust] = useState("0");
+  const [robuxAdjust, setRobuxAdjust] = useState("0");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
-    const [users, offers, orders, reviews, banned, pending, latest] = await Promise.all([
+    const [users, offers, orders, reviews, banned, pending, latest, recentOrdersData, recentReviewsData] = await Promise.all([
       supabase.from("users").select("id", { count: "exact", head: true }),
       supabase.from("offers").select("id", { count: "exact", head: true }),
       supabase.from("orders").select("id", { count: "exact", head: true }),
@@ -1808,6 +1981,8 @@ function AdminSheet({
       supabase.from("users").select("id", { count: "exact", head: true }).eq("market_banned", true),
       supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("users").select("*").order("created_at", { ascending: false }).limit(8),
+      supabase.from("orders").select("*, buyer:users!buyer_uid(*), seller:users!seller_uid(*)").order("created_at", { ascending: false }).limit(8),
+      supabase.from("reviews").select("*, buyer:users!buyer_uid(*)").order("created_at", { ascending: false }).limit(8),
     ]);
 
     setStats({
@@ -1819,6 +1994,8 @@ function AdminSheet({
       pending: pending.count || 0,
     });
     setLatestUsers((latest.data || []) as User[]);
+    setRecentOrders((recentOrdersData.data || []) as Order[]);
+    setRecentReviews((recentReviewsData.data || []) as Review[]);
     setLoading(false);
   }, []);
 
@@ -1829,15 +2006,20 @@ function AdminSheet({
   const selectUser = (user: User | null) => {
     setFoundUser(user);
     setBanReason(user?.ban_reason || "");
-    setBadgeIcon(user?.badge_icon || "✅");
-    setBadgeLabel(user?.badge_label || "Проверенный продавец");
+    setStarsAdjust("0");
+    setRobuxAdjust("0");
+    setAdminMessage("");
   };
 
   const searchUser = async () => {
     if (!lookupId.trim()) return;
-    const { data } = await supabase.from("users").select("*").eq("marketplace_id", Number(lookupId)).maybeSingle();
+    const clean = lookupId.trim();
+    const query = /^\d+$/.test(clean)
+      ? supabase.from("users").select("*").eq("marketplace_id", Number(clean))
+      : supabase.from("users").select("*").eq("username", clean.replace(/^@/, ""));
+    const { data } = await query.maybeSingle();
     selectUser((data || null) as User | null);
-    if (!data) showToast("Пользователь с таким Market ID не найден.", "err");
+    if (!data) showToast("Пользователь не найден.", "err");
   };
 
   const updateUser = async (payload: Partial<User>) => {
@@ -1858,8 +2040,77 @@ function AdminSheet({
     showToast("Пользователь обновлен.");
   };
 
+  const adjustBalances = async () => {
+    if (!foundUser) return;
+    const nextStars = Math.max(0, Number(foundUser.stars || 0) + Number(starsAdjust || 0));
+    const nextRobux = Math.max(0, Number(foundUser.robux || 0) + Number(robuxAdjust || 0));
+    await updateUser({ stars: nextStars, robux: nextRobux });
+  };
+
+  const sendAdminSupportMessage = async () => {
+    if (!foundUser || !adminMessage.trim()) return;
+    setWorking(true);
+    await supabase.from("messages").insert({
+      id: `admin_${Date.now()}`,
+      from_uid: me.id,
+      to_uid: foundUser.id,
+      text: `[Админ] ${adminMessage.trim()}`,
+      img: null,
+      read: false,
+      file_type: "system",
+    });
+    setWorking(false);
+    setAdminMessage("");
+    showToast("Админ-сообщение отправлено.");
+  };
+
+  const refundOrder = async (order: Order) => {
+    setWorking(true);
+    const { data: buyer } = await supabase.from("users").select("*").eq("id", order.buyer_uid).single();
+    const { data: seller } = await supabase.from("users").select("*").eq("id", order.seller_uid).single();
+    if (!buyer || !seller) {
+      setWorking(false);
+      showToast("Не удалось загрузить участников заказа.", "err");
+      return;
+    }
+
+    if (order.cur === "STARS") {
+      await supabase.from("users").update({ stars: Number(buyer.stars || 0) + order.price }).eq("id", order.buyer_uid);
+      await supabase.from("users").update({ stars: Math.max(0, Number(seller.stars || 0) - order.price) }).eq("id", order.seller_uid);
+    } else {
+      await supabase.from("users").update({ robux: Number(buyer.robux || 0) + order.price }).eq("id", order.buyer_uid);
+      await supabase.from("users").update({ robux: Math.max(0, Number(seller.robux || 0) - order.price) }).eq("id", order.seller_uid);
+    }
+
+    await supabase.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+    await supabase.from("messages").insert({
+      id: `sys_${Date.now()}`,
+      from_uid: order.buyer_uid,
+      to_uid: order.seller_uid,
+      text: `Система: администратор оформил возврат по заказу #${shortOrderId(order.id)}.`,
+      img: null,
+      read: false,
+      file_type: "system",
+    });
+    setWorking(false);
+    await load();
+    showToast("Возврат выполнен.");
+  };
+
+  const deleteReview = async (review: Review) => {
+    setWorking(true);
+    await supabase.from("reviews").delete().eq("id", review.id);
+    const { data: ratingsData } = await supabase.from("reviews").select("rating").eq("seller_uid", review.seller_uid);
+    const ratings = (ratingsData || []).map((row: { rating: number }) => Number(row.rating || 0)).filter(Boolean);
+    const average = ratings.length ? Number((ratings.reduce((sum, value) => sum + value, 0) / ratings.length).toFixed(2)) : 0;
+    await supabase.from("users").update({ rating: average, review_count: ratings.length }).eq("id", review.seller_uid);
+    setWorking(false);
+    await load();
+    showToast("Отзыв удален.");
+  };
+
   return (
-    <Sheet onClose={onClose}>
+    <Sheet onClose={onClose} maxWidth={760}>
       <SectionTitle>Админка маркетплейса</SectionTitle>
       {loading && <Spinner />}
       {!loading && (
@@ -1883,9 +2134,9 @@ function AdminSheet({
           </div>
 
           <div className="panel" style={{ padding: 14, marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Поиск по Market ID</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Поиск по Market ID или username</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <input className="inp" value={lookupId} onChange={(e) => setLookupId(e.target.value.replace(/[^\d]/g, ""))} placeholder="Например: 12" />
+              <input className="inp" value={lookupId} onChange={(e) => setLookupId(e.target.value)} placeholder="Например: 12 или @nickname" />
               <button className="btn-primary" onClick={searchUser}>
                 Найти
               </button>
@@ -1918,11 +2169,11 @@ function AdminSheet({
                   <Avatar user={foundUser} size={56} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>@{getUsername(foundUser)}</div>
-                    <div style={{ color: T.text3, fontSize: 12 }}>Market ID #{foundUser.marketplace_id || "—"}</div>
+                    <div style={{ color: T.text3, fontSize: 12 }}>Market ID #{foundUser.marketplace_id || "—"} • DB ID {foundUser.id}</div>
                   </div>
                 </div>
                 <div style={{ color: T.text2, fontSize: 13, lineHeight: 1.6 }}>
-                  Продажи: {foundUser.sales || 0} • Worth: {formatWorth(foundUser.worth)} • Рейтинг: {foundUser.rating || 0}
+                  Продажи: {foundUser.sales || 0} • Stars: {foundUser.stars || 0} • Robux: {foundUser.robux || 0} • Рейтинг: {foundUser.rating || 0}
                 </div>
               </div>
 
@@ -1934,6 +2185,9 @@ function AdminSheet({
                   </button>
                   <button className="btn-ghost" disabled={working} onClick={() => updateUser({ is_admin: !foundUser.is_admin })}>
                     {foundUser.is_admin ? "Снять admin" : "Сделать admin"}
+                  </button>
+                  <button className="btn-ghost" disabled={working} onClick={() => updateUser({ plan: foundUser.plan === "PREMIUM" ? "FREE" : "PREMIUM" })}>
+                    {foundUser.plan === "PREMIUM" ? "Снять Premium" : "Выдать Premium"}
                   </button>
                   <button
                     className="btn-ghost"
@@ -1947,22 +2201,77 @@ function AdminSheet({
               </div>
 
               <div className="panel" style={{ padding: 14 }}>
-                <div style={{ fontWeight: 700, marginBottom: 10 }}>Бейдж продавца</div>
-                <div style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: 10, marginBottom: 10 }}>
-                  <input className="inp" value={badgeIcon} onChange={(e) => setBadgeIcon(e.target.value)} placeholder="✅" />
-                  <input className="inp" value={badgeLabel} onChange={(e) => setBadgeLabel(e.target.value)} placeholder="Проверенный продавец" />
+                <div style={{ fontWeight: 700, marginBottom: 10 }}>Баланс</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <input className="inp" value={starsAdjust} onChange={(e) => setStarsAdjust(e.target.value)} placeholder="Изменить Stars, например +100" />
+                  <input className="inp" value={robuxAdjust} onChange={(e) => setRobuxAdjust(e.target.value)} placeholder="Изменить Robux, например -50" />
                 </div>
                 <button
                   className="btn-primary"
                   style={{ width: "100%" }}
                   disabled={working}
-                  onClick={() => updateUser({ badge_icon: badgeIcon, badge_label: badgeLabel, badge_color: T.blue, verified: true })}
+                  onClick={adjustBalances}
                 >
-                  Сохранить бейдж
+                  Применить баланс
+                </button>
+              </div>
+
+              <div className="panel" style={{ padding: 14 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10 }}>Вмешательство в чат</div>
+                <textarea className="inp" rows={3} value={adminMessage} onChange={(e) => setAdminMessage(e.target.value)} placeholder="Сообщение от имени администрации" />
+                <button
+                  className="btn-primary"
+                  style={{ width: "100%", marginTop: 10 }}
+                  disabled={working}
+                  onClick={sendAdminSupportMessage}
+                >
+                  Отправить [Админ]
                 </button>
               </div>
             </div>
           )}
+
+          <SectionTitle>Последние заказы</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            {recentOrders.map((order) => (
+              <div key={order.id} className="panel" style={{ padding: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700 }}>Order #{order.id}</div>
+                  <span className={order.status === "cancelled" ? "red-badge" : "gold-badge"}>{order.status}</span>
+                </div>
+                <div style={{ color: T.text2, fontSize: 13, lineHeight: 1.6, marginBottom: 10 }}>
+                  @{getUsername(order.buyer)} → @{getUsername(order.seller)} • {formatPrice(order.price, order.cur)} • Offer {order.offer_id}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn-ghost" disabled={working || order.status === "cancelled"} onClick={() => refundOrder(order)}>
+                    Возврат
+                  </button>
+                  <button className="btn-ghost" disabled={working} onClick={() => selectUser(order.seller || null)}>
+                    Открыть продавца
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <SectionTitle>Последние отзывы</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {recentReviews.map((review) => (
+              <div key={review.id} className="panel" style={{ padding: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700 }}>Review #{review.id}</div>
+                  <div style={{ color: T.gold }}>{review.rating}/5</div>
+                </div>
+                <div style={{ color: T.text2, lineHeight: 1.6, marginBottom: 8 }}>{review.text || "Без текста"}</div>
+                <div style={{ color: T.text3, fontSize: 12, marginBottom: 10 }}>
+                  Заказ: {review.order_id} • Buyer: @{getUsername(review.buyer)} • Seller ID: {review.seller_uid}
+                </div>
+                <button className="btn-ghost" disabled={working} onClick={() => deleteReview(review)}>
+                  Удалить отзыв
+                </button>
+              </div>
+            ))}
+          </div>
         </>
       )}
     </Sheet>
@@ -1997,16 +2306,26 @@ function TabBar({
   pendingOrders: number;
   onCreate: () => void;
 }) {
+  const NavIcon = ({ name, active }: { name: "home" | "chat" | "plus" | "orders" | "profile"; active: boolean }) => {
+    const color = active ? "#000" : "#fff";
+    const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+    if (name === "home") return <svg {...common}><path d="M3 10.8 12 4l9 6.8" /><path d="M5.5 10.5V20h13V10.5" /></svg>;
+    if (name === "chat") return <svg {...common}><path d="M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" /></svg>;
+    if (name === "plus") return <svg {...common}><path d="M12 5v14" /><path d="M5 12h14" /></svg>;
+    if (name === "orders") return <svg {...common}><path d="M7 6h13l-1.3 7.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.6L5 3H3" /><circle cx="10" cy="19" r="1.4" /><circle cx="17" cy="19" r="1.4" /></svg>;
+    return <svg {...common}><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>;
+  };
+
   const items = [
-    { id: "home", label: "Главная", icon: "🏠" },
-    { id: "chats", label: "Чаты", icon: "💬", badge: unread },
-    { id: "create", label: "Создать", icon: "➕", action: onCreate },
-    { id: "orders", label: "Заказы", icon: "📋", badge: pendingOrders },
-    { id: "profile", label: "Профиль", icon: "👤" },
+    { id: "home", label: "Главная", icon: "home" as const },
+    { id: "chats", label: "Чаты", icon: "chat" as const, badge: unread },
+    { id: "create", label: "Создать", icon: "plus" as const, action: onCreate },
+    { id: "orders", label: "Заказы", icon: "orders" as const, badge: pendingOrders },
+    { id: "profile", label: "Профиль", icon: "profile" as const },
   ];
 
   return (
-    <div style={{ display: "flex", borderTop: `1px solid ${T.line}`, background: T.bg1, height: 62, flexShrink: 0 }}>
+    <div style={{ display: "flex", borderTop: `1px solid ${T.line}`, background: "#000", height: 72, flexShrink: 0 }}>
       {items.map((item) => {
         const active = tab === item.id;
         const handleClick = item.action || (() => setTab(item.id));
@@ -2018,34 +2337,44 @@ function TabBar({
               flex: 1,
               border: "none",
               background: "transparent",
-              color: active ? T.gold : T.text3,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 4,
+              gap: 6,
               cursor: "pointer",
               position: "relative",
             }}
           >
-            <span style={{ fontSize: 20 }}>{item.icon}</span>
-            <span style={{ fontSize: 11, fontWeight: active ? 700 : 500 }}>{item.label}</span>
+            <span
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 14,
+                background: active ? "#fff" : "transparent",
+                border: active ? "1px solid rgba(255,255,255,.9)" : "1px solid rgba(255,255,255,.12)",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              <NavIcon name={item.icon} active={active} />
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{item.label}</span>
             {item.badge ? (
               <span
                 style={{
                   position: "absolute",
-                  top: 7,
-                  right: "28%",
+                  top: 8,
+                  right: "22%",
                   minWidth: 18,
                   height: 18,
                   borderRadius: 999,
-                  background: item.id === "orders" ? T.green : T.red,
-                  color: "#fff",
+                  background: item.id === "orders" ? "#fff" : T.gold,
+                  color: "#000",
                   fontSize: 10,
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  fontWeight: 800,
+                  display: "grid",
+                  placeItems: "center",
                   padding: "0 5px",
                 }}
               >
@@ -2074,6 +2403,7 @@ export default function App() {
   const [toast, setToast] = useState<{ message: string; type: "ok" | "err" } | null>(null);
   const [unread, setUnread] = useState(0);
   const [pendingOrders, setPendingOrders] = useState(0);
+  const lastMessageAtRef = useRef(0);
 
   const showToast = useCallback((message: string, type: "ok" | "err" = "ok") => {
     setToast({ message, type });
@@ -2173,6 +2503,7 @@ export default function App() {
     if (!me) return;
     setChatUser(user);
     setTab("chats");
+    lastMessageAtRef.current = 0;
 
     const { data } = await supabase
       .from("messages")
@@ -2209,26 +2540,38 @@ export default function App() {
     };
   }, [chatUser, me]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!me || !chatUser) return;
+  const sendMessage = useCallback(async (payload: { text?: string; img?: string | null; fileName?: string | null; fileType?: string | null }) => {
+    if (!me || !chatUser) return false;
+    if (!payload.text && !payload.img) return false;
+
+    const now = Date.now();
+    const remaining = MESSAGE_COOLDOWN_MS - (now - lastMessageAtRef.current);
+    if (remaining > 0) {
+      showToast(`Подожди ${Math.ceil(remaining / 1000)} сек. перед следующим сообщением.`, "err");
+      return false;
+    }
 
     await supabase.from("messages").insert({
-      id: `msg_${Date.now()}`,
+      id: `msg_${now}`,
       from_uid: me.id,
       to_uid: chatUser.id,
-      text,
-      img: null,
+      text: payload.text || "",
+      img: payload.img || null,
       read: false,
+      file_name: payload.fileName || null,
+      file_type: payload.fileType || null,
     });
+    lastMessageAtRef.current = now;
 
     const chatUrl = `${getAppBaseUrl()}?chat=${me.id}`;
     await notifyTelegram(
       chatUser.id,
-      `Вам пришло новое сообщение в чате от @${getUsername(me)}.\n\n${text.slice(0, 120)}`,
+      `Вам пришло новое сообщение в чате от @${getUsername(me)}.\n\n${payload.img ? "Изображение или стикер" : (payload.text || "").slice(0, 120)}`,
       "Перейти в чат",
       chatUrl
     );
-  }, [chatUser, me, notifyTelegram]);
+    return true;
+  }, [chatUser, me, notifyTelegram, showToast]);
 
   useEffect(() => {
     if (!me) return;
@@ -2243,6 +2586,10 @@ export default function App() {
     if (!me) return;
     if (offer.uid === me.id) {
       showToast("Нельзя купить свой собственный товар.", "err");
+      return;
+    }
+    if (Number(offer.stock ?? 1) < 1) {
+      showToast("Товар закончился.", "err");
       return;
     }
 
@@ -2281,18 +2628,23 @@ export default function App() {
       cur: offer.cur,
     });
 
-    await supabase.from("offers").update({ sales: Number(offer.sales || 0) + 1 }).eq("id", offer.id);
+    await supabase.from("offers").update({ sales: Number(offer.sales || 0) + 1, stock: Math.max(0, Number(offer.stock ?? 1) - 1) }).eq("id", offer.id);
 
-    const sellerText = `Покупатель оплатил заказ #${shortOrderId(orderId)}\n1 шт. на сумму ${formatPrice(offer.price, offer.cur)}\nПокупатель: @${getUsername(me)}`;
     await supabase.from("messages").insert({
       id: `sys_${Date.now()}`,
       from_uid: me.id,
       to_uid: offer.uid,
-      text: sellerText,
+      text: `Система: покупатель оплатил заказ #${shortOrderId(orderId)}.\n1 шт. на сумму ${formatPrice(offer.price, offer.cur)}.\nПокупатель: @${getUsername(me)}`,
       img: null,
       read: false,
+      file_type: "system",
     });
-    await notifyTelegram(offer.uid, sellerText, "Открыть маркет", getAppBaseUrl());
+    await notifyTelegram(
+      offer.uid,
+      `Покупатель оплатил заказ #${shortOrderId(orderId)}\n1 шт. на сумму ${formatPrice(offer.price, offer.cur)}\nПокупатель: @${getUsername(me)}`,
+      "Открыть чат",
+      `${getAppBaseUrl()}?chat=${me.id}`
+    );
 
     if (offer.auto) {
       const currencyField = offer.cur === "STARS" ? "stars" : "robux";

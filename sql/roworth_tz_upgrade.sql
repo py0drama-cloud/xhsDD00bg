@@ -34,6 +34,7 @@ alter table if exists public.users
 
 alter table if exists public.offers
   add column if not exists images jsonb default '[]'::jsonb,
+  add column if not exists stock integer default 1,
   add column if not exists cover_index integer default 0,
   add column if not exists theme_color text,
   add column if not exists text_color text,
@@ -63,3 +64,5 @@ create index if not exists offers_uid_idx on public.offers(uid);
 create index if not exists messages_dialog_idx on public.messages(from_uid, to_uid);
 create index if not exists orders_seller_status_idx on public.orders(seller_uid, status);
 create unique index if not exists users_marketplace_id_idx on public.users(marketplace_id);
+
+
