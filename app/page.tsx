@@ -139,19 +139,17 @@ const TYPE_ICONS: Record<string, string> = {
   "Маркетолог": "📣",
 };
 
-const PROFILE_FONTS = ["Syne", "Georgia", "Trebuchet MS", "Courier New"];
-const PROFILE_COLORS = ["#F2EAD8", "#D4A843", "#5A8FC4", "#4E9E6E", "#FF8DA1", "#C6B3FF"];
+const PROFILE_FONTS = ["Sora", "Georgia", "Trebuchet MS", "Courier New"];
+const PROFILE_COLORS = ["#F7F2FF", "#C8A3FF", "#87A7FF", "#63C7FF", "#FF8BDD", "#7DF2D7"];
 const PROFILE_GRADIENTS = [
-  ["#161310", "#272118"],
-  ["#1C3048", "#244E6C"],
-  ["#352213", "#7D4B18"],
-  ["#17352B", "#274B5A"],
   ["#2A1635", "#5F2D91"],
-  ["#30160D", "#7B2626"],
   ["#101C2B", "#224B72"],
   ["#1C1A30", "#40326C"],
   ["#18261F", "#2C6B57"],
-  ["#2A1B12", "#8C5A23"],
+  ["#1A1036", "#452D86"],
+  ["#170E32", "#2256A8"],
+  ["#2D0F37", "#7D2A74"],
+  ["#0E1638", "#245F86"],
 ];
 const MIN_OFFER_PRICE_STARS = 5;
 const PREMIUM_PRICE_STARS = 1000;
@@ -206,47 +204,178 @@ const ROLE_PRESETS = [
 const CHAT_STICKERS = ["❤️", "😎", "🤣", "🔥", "👀", "🙏", "💀", "✨", "😡", "👍", "🎯", "🤝"];
 
 const T = {
-  bg: "#080705",
-  bg1: "#0F0D0A",
-  bg2: "#161310",
-  bg3: "#1E1A14",
-  bg4: "#272118",
-  line: "#2A2318",
-  line2: "#3A3022",
-  gold: "#D4A843",
-  gold2: "#F0C96A",
-  text: "#F2EAD8",
-  text2: "#B9A88E",
-  text3: "#6C5E4A",
-  red: "#C96060",
-  green: "#4E9E6E",
-  blue: "#5A8FC4",
+  bg: "#06020F",
+  bg1: "#0A0617",
+  bg2: "rgba(18, 14, 35, 0.78)",
+  bg3: "rgba(27, 20, 52, 0.74)",
+  bg4: "rgba(41, 30, 79, 0.92)",
+  line: "rgba(183, 155, 255, 0.16)",
+  line2: "rgba(219, 203, 255, 0.28)",
+  gold: "#9A63FF",
+  gold2: "#E1D6FF",
+  text: "#F7F2FF",
+  text2: "#C8BFE6",
+  text3: "#8D82B5",
+  red: "#FF73B4",
+  green: "#67F2D1",
+  blue: "#69C8FF",
 };
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;height:100%;background:${T.bg};color:${T.text};font-family:'DM Sans',sans-serif}
-body{overflow:hidden}
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(163,101,255,.32), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(105,200,255,.18), transparent 24%),
+    radial-gradient(circle at 50% 120%, rgba(255,115,180,.12), transparent 40%),
+    #05020d;
+  color:${T.text};
+  font-family:'Manrope',sans-serif
+}
+body{
+  overflow:hidden;
+  position:relative;
+  text-rendering:optimizeLegibility
+}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 12% 22%, rgba(255,255,255,.10) 0 1.5px, transparent 2.2px) 0 0/140px 140px,
+    radial-gradient(circle at 76% 18%, rgba(255,255,255,.08) 0 1.3px, transparent 2px) 0 0/180px 180px,
+    radial-gradient(circle at 58% 74%, rgba(255,255,255,.06) 0 1.4px, transparent 2px) 0 0/160px 160px;
+  opacity:.55
+}
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,2,13,0) 0%, rgba(5,2,13,.14) 38%, rgba(5,2,13,.78) 100%)
+}
 button,input,textarea,select{font:inherit}
 button{outline:none}
 .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
-.card{background:${T.bg2};border:1px solid ${T.line};border-radius:18px}
-.panel{background:${T.bg2};border:1px solid ${T.line};border-radius:14px}
-.inp{width:100%;background:${T.bg3};border:1px solid ${T.line};border-radius:12px;padding:12px 14px;color:${T.text};outline:none}
-.inp:focus{border-color:${T.gold}}
-.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:12px;padding:12px 16px;background:linear-gradient(135deg,${T.gold},${T.gold2});color:#1A0F00;font-weight:700;cursor:pointer}
+.card,.panel{
+  position:relative;
+  overflow:hidden;
+  backdrop-filter:blur(22px)
+}
+.card::before,.panel::before{
+  content:'';
+  position:absolute;
+  inset:1px;
+  border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03));
+  pointer-events:none
+}
+.card{
+  background:linear-gradient(180deg,rgba(32,23,62,.74),rgba(12,9,26,.92));
+  border:1px solid ${T.line2};
+  border-radius:28px;
+  box-shadow:0 28px 60px rgba(4,2,12,.55), inset 0 1px 0 rgba(255,255,255,.08)
+}
+.panel{
+  background:linear-gradient(180deg,rgba(28,20,56,.66),rgba(11,8,23,.88));
+  border:1px solid ${T.line};
+  border-radius:22px;
+  box-shadow:0 18px 40px rgba(4,2,12,.42)
+}
+.inp{
+  width:100%;
+  background:rgba(12,9,24,.72);
+  border:1px solid rgba(219,203,255,.12);
+  border-radius:18px;
+  padding:13px 16px;
+  color:${T.text};
+  outline:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
+}
+.inp::placeholder{color:${T.text3}}
+.inp:focus{
+  border-color:rgba(154,99,255,.58);
+  box-shadow:0 0 0 4px rgba(154,99,255,.14), inset 0 1px 0 rgba(255,255,255,.08)
+}
+textarea.inp{resize:none}
+select.inp{
+  appearance:none;
+  background-image:
+    linear-gradient(45deg,transparent 50%,${T.text2} 50%),
+    linear-gradient(135deg,${T.text2} 50%,transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(50% - 3px),
+    calc(100% - 14px) calc(50% - 3px);
+  background-size:6px 6px,6px 6px;
+  background-repeat:no-repeat;
+  padding-right:40px
+}
+.btn-primary{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border:none;
+  border-radius:18px;
+  padding:12px 16px;
+  background:linear-gradient(135deg,#8B5FFF,#5F8DFF 58%,#59CFFF 100%);
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 18px 28px rgba(95,89,255,.34)
+}
 .btn-primary:disabled{opacity:.45;cursor:not-allowed}
-.btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid ${T.line2};border-radius:12px;padding:11px 14px;background:transparent;color:${T.text};cursor:pointer}
+.btn-ghost{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border:1px solid rgba(219,203,255,.15);
+  border-radius:18px;
+  padding:11px 14px;
+  background:rgba(18,14,35,.72);
+  color:${T.text};
+  cursor:pointer;
+  backdrop-filter:blur(18px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+}
 .btn-ghost:disabled{opacity:.45;cursor:not-allowed}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid ${T.line2};background:${T.bg2};color:${T.text2};cursor:pointer;white-space:nowrap}
-.pill.active{border-color:${T.gold};color:${T.gold2};background:rgba(212,168,67,.08)}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:9px 14px;
+  border-radius:999px;
+  border:1px solid rgba(219,203,255,.14);
+  background:rgba(18,14,35,.68);
+  color:${T.text2};
+  cursor:pointer;
+  white-space:nowrap;
+  backdrop-filter:blur(18px)
+}
+.pill.active{
+  border-color:rgba(154,99,255,.42);
+  color:${T.text};
+  background:linear-gradient(135deg,rgba(145,96,255,.3),rgba(89,207,255,.12))
+}
 .gold-badge,.blue-badge,.red-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
-.gold-badge{background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.28);color:${T.gold2}}
-.blue-badge{background:rgba(90,143,196,.12);border:1px solid rgba(90,143,196,.28);color:${T.blue}}
-.red-badge{background:rgba(201,96,96,.12);border:1px solid rgba(201,96,96,.28);color:${T.red}}
-.title{font-family:'Syne',sans-serif;font-weight:800;letter-spacing:-.03em}
+.gold-badge{background:rgba(154,99,255,.16);border:1px solid rgba(154,99,255,.32);color:${T.gold2}}
+.blue-badge{background:rgba(105,200,255,.14);border:1px solid rgba(105,200,255,.28);color:${T.blue}}
+.red-badge{background:rgba(255,115,180,.14);border:1px solid rgba(255,115,180,.28);color:${T.red}}
+.title{font-family:'Sora',sans-serif;font-weight:700;letter-spacing:-.04em}
+.soft-text{color:${T.text3}}
+.glass-cut{
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.08)
+}
 .hide-scrollbar::-webkit-scrollbar{display:none}
+.scroll::-webkit-scrollbar{width:6px}
+.scroll::-webkit-scrollbar-thumb{background:rgba(219,203,255,.16);border-radius:999px}
 `;
 
 function shortOrderId(id: string) {
@@ -283,7 +412,7 @@ function getAvatar(user: User | null | undefined) {
 }
 
 function getProfileGradient(user: User | null | undefined) {
-  return `linear-gradient(135deg,${user?.theme_color || T.bg2},${user?.theme_color_2 || T.bg4})`;
+  return `linear-gradient(135deg,${user?.theme_color || "#1A1036"},${user?.theme_color_2 || "#4B2F89"})`;
 }
 
 function getOfferCover(offer: Offer) {
@@ -386,16 +515,32 @@ function StarsBadge({ value }: { value: number }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 6,
-        padding: "8px 12px",
-        borderRadius: 12,
-        background: T.bg2,
-        border: `1px solid ${T.line}`,
-        color: T.gold,
-        fontWeight: 700,
+        gap: 8,
+        padding: "8px 10px",
+        borderRadius: 999,
+        background: "linear-gradient(180deg,rgba(24,18,46,.8),rgba(11,8,24,.92))",
+        border: `1px solid ${T.line2}`,
+        color: T.text,
+        fontWeight: 800,
+        boxShadow: "0 12px 24px rgba(3,2,10,.28)",
+        backdropFilter: "blur(18px)",
       }}
     >
-      <span>⭐</span>
+      <span
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          background: "linear-gradient(135deg,rgba(154,99,255,.92),rgba(105,200,255,.88))",
+          color: "#fff",
+          fontSize: 12,
+          boxShadow: "0 8px 18px rgba(95,89,255,.28)",
+        }}
+      >
+        ✦
+      </span>
       <span>{value}</span>
     </div>
   );
@@ -403,8 +548,33 @@ function StarsBadge({ value }: { value: number }) {
 
 function CurBadge({ cur, price }: { cur: Currency; price?: number }) {
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, color: T.gold, fontWeight: 700 }}>
-      <span>{cur === "STARS" ? "⭐" : "R$"}</span>
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "8px 12px",
+        borderRadius: 999,
+        background: "linear-gradient(135deg,rgba(139,95,255,.94),rgba(90,158,255,.84))",
+        color: "#fff",
+        fontWeight: 800,
+        boxShadow: "0 14px 26px rgba(91,92,255,.26)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          background: "rgba(255,255,255,.18)",
+          fontSize: 11,
+        }}
+      >
+        {cur === "STARS" ? "✦" : "R"}
+      </span>
       {price !== undefined && <span>{price}</span>}
     </div>
   );
@@ -420,7 +590,7 @@ function Avatar({ user, size = 42, onClick }: { user: User | null | undefined; s
       style={{
         width: size,
         height: size,
-        borderRadius: Math.round(size * 0.28),
+        borderRadius: Math.round(size * 0.32),
         overflow: "hidden",
         background: src && !failed ? "transparent" : T.blue,
         display: "flex",
@@ -430,12 +600,14 @@ function Avatar({ user, size = 42, onClick }: { user: User | null | undefined; s
         fontWeight: 700,
         cursor: onClick ? "pointer" : "default",
         flexShrink: 0,
+        border: "1px solid rgba(255,255,255,.12)",
+        boxShadow: "0 12px 24px rgba(5,3,13,.35)",
       }}
     >
       {src && !failed ? (
         <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setFailed(true)} />
       ) : (
-        <span style={{ fontFamily: "'Syne',sans-serif", fontSize: size * 0.42 }}>{letter}</span>
+        <span style={{ fontFamily: "'Sora',sans-serif", fontSize: size * 0.42 }}>{letter}</span>
       )}
     </div>
   );
@@ -450,13 +622,14 @@ function Toast({ message, type }: { message: string; type: "ok" | "err" }) {
         bottom: 90,
         transform: "translateX(-50%)",
         zIndex: 200,
-        padding: "10px 16px",
-        borderRadius: 12,
-        background: T.bg4,
-        border: `1px solid ${type === "ok" ? T.green : T.red}`,
+        padding: "12px 16px",
+        borderRadius: 18,
+        background: "linear-gradient(180deg,rgba(25,18,49,.84),rgba(11,8,25,.96))",
+        border: `1px solid ${type === "ok" ? "rgba(103,242,209,.42)" : "rgba(255,115,180,.42)"}`,
         color: type === "ok" ? T.green : T.red,
-        fontWeight: 700,
-        boxShadow: "0 10px 30px rgba(0,0,0,.35)",
+        fontWeight: 800,
+        boxShadow: "0 20px 40px rgba(4,2,12,.52)",
+        backdropFilter: "blur(22px)",
       }}
     >
       {message}
@@ -475,7 +648,7 @@ function Sheet({
 }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 120, display: "flex", justifyContent: "center", alignItems: "flex-end" }}>
-      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.72)" }} />
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,2,12,.76)", backdropFilter: "blur(10px)" }} />
       <div
         className="scroll"
         style={{
@@ -483,17 +656,19 @@ function Sheet({
           width: "100%",
           maxWidth,
           maxHeight: "min(92dvh, calc(100dvh - 12px))",
-          background: T.bg1,
-          borderTopLeftRadius: 22,
-          borderTopRightRadius: 22,
+          background: "linear-gradient(180deg,rgba(17,12,35,.92),rgba(8,6,18,.98))",
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
           border: `1px solid ${T.line2}`,
           borderBottom: "none",
           padding: 18,
           paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
           overscrollBehavior: "contain",
+          boxShadow: "0 -18px 60px rgba(2,1,8,.65)",
+          backdropFilter: "blur(26px)",
         }}
       >
-        <div style={{ width: 44, height: 4, borderRadius: 999, background: T.line2, margin: "0 auto 14px" }} />
+        <div style={{ width: 50, height: 5, borderRadius: 999, background: "rgba(255,255,255,.18)", margin: "0 auto 16px" }} />
         {children}
       </div>
     </div>
@@ -503,8 +678,11 @@ function Sheet({
 function SectionTitle({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-      <div className="title" style={{ fontSize: 18 }}>
-        {children}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+        <div className="title" style={{ fontSize: 18, whiteSpace: "nowrap" }}>
+          {children}
+        </div>
+        <div style={{ height: 1, flex: 1, minWidth: 18, background: `linear-gradient(90deg,${T.line2},transparent)` }} />
       </div>
       {right}
     </div>
@@ -516,17 +694,18 @@ function LoadingScreen() {
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
       <div
         style={{
-          width: 70,
-          height: 70,
-          borderRadius: 22,
-          background: `linear-gradient(135deg,${T.gold},${T.gold2})`,
-          color: "#1A0F00",
+          width: 78,
+          height: 78,
+          borderRadius: 26,
+          background: "linear-gradient(135deg,#8B5FFF,#5F8DFF 60%,#59CFFF)",
+          color: "#fff",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "'Syne',sans-serif",
+          fontFamily: "'Sora',sans-serif",
           fontSize: 32,
-          fontWeight: 800,
+          fontWeight: 700,
+          boxShadow: "0 26px 60px rgba(95,89,255,.35)",
         }}
       >
         R
@@ -555,33 +734,36 @@ function TelegramLoginScreen() {
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div className="card" style={{ width: "100%", maxWidth: 380, padding: 28, textAlign: "center" }}>
+      <div className="card" style={{ width: "100%", maxWidth: 392, padding: 28, textAlign: "center", background: "linear-gradient(180deg,rgba(28,20,56,.8),rgba(10,7,20,.96))" }}>
         <div
           style={{
-            width: 72,
-            height: 72,
-            borderRadius: 22,
+            width: 76,
+            height: 76,
+            borderRadius: 24,
             margin: "0 auto 16px",
-            background: `linear-gradient(135deg,${T.gold},${T.gold2})`,
-            color: "#1A0F00",
+            background: "linear-gradient(135deg,#8B5FFF,#5F8DFF 58%,#59CFFF)",
+            color: "#fff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontFamily: "'Syne',sans-serif",
+            fontFamily: "'Sora',sans-serif",
             fontSize: 34,
-            fontWeight: 800,
+            fontWeight: 700,
+            boxShadow: "0 24px 50px rgba(95,89,255,.34)",
           }}
         >
           R
         </div>
-        <div className="title" style={{ fontSize: 30 }}>
+        <div className="title" style={{ fontSize: 30, marginBottom: 8 }}>
           RoWorth
         </div>
-        <div style={{ color: T.text2, fontSize: 14, lineHeight: 1.6, margin: "8px 0 24px" }}>
+        <div style={{ color: T.text2, fontSize: 14, lineHeight: 1.7, margin: "0 0 24px" }}>
           Маркет для Roblox-разработчиков прямо в Telegram Web App.
         </div>
-        <div id="telegram-widget" style={{ display: "flex", justifyContent: "center", minHeight: 52 }} />
-        <div style={{ color: T.text3, fontSize: 12, marginTop: 18 }}>Открой маркет через Telegram-бота или войди через виджет.</div>
+        <div className="panel" style={{ padding: 14, marginBottom: 16, background: "linear-gradient(135deg,rgba(149,100,255,.24),rgba(89,207,255,.12))" }}>
+          <div id="telegram-widget" style={{ display: "flex", justifyContent: "center", minHeight: 52 }} />
+        </div>
+        <div style={{ color: T.text3, fontSize: 12, lineHeight: 1.6 }}>Открой маркет через Telegram-бота или войди через виджет.</div>
       </div>
     </div>
   );
@@ -639,7 +821,7 @@ function SetupUsername({
       avatar_url: tgUser.photo_url || null,
       avatar_gif_url: null,
       name_color: null,
-      name_font: "Syne",
+      name_font: "Sora",
       badge_icon: null,
       badge_label: null,
       badge_color: null,
@@ -661,9 +843,9 @@ function SetupUsername({
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div className="card" style={{ width: "100%", maxWidth: 380, padding: 24 }}>
+      <div className="card" style={{ width: "100%", maxWidth: 392, padding: 24 }}>
         <SectionTitle>Добро пожаловать</SectionTitle>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
+        <div className="panel" style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, padding: 14 }}>
           <Avatar
             user={{
               id: String(tgUser.id),
@@ -684,7 +866,7 @@ function SetupUsername({
           />
           <div>
             <div style={{ fontWeight: 700, fontSize: 17 }}>{tgUser.first_name}</div>
-            <div style={{ color: T.text2, fontSize: 13 }}>Выбери username для маркетплейса.</div>
+            <div style={{ color: T.text2, fontSize: 13, lineHeight: 1.6 }}>Выбери username для маркетплейса.</div>
           </div>
         </div>
         <input className="inp" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
@@ -710,43 +892,56 @@ function OfferCard({
     <button
       onClick={() => onOpen(offer)}
       style={{
-        display: "block",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
         width: "100%",
         textAlign: "left",
-        background: T.bg2,
+        background: "linear-gradient(180deg,rgba(28,20,55,.72),rgba(11,8,23,.9))",
         border: `1px solid ${T.line}`,
-        borderRadius: 18,
-        padding: 0,
+        borderRadius: 24,
+        padding: 12,
         overflow: "hidden",
         cursor: "pointer",
         color: T.text,
+        boxShadow: "0 16px 36px rgba(4,2,12,.38)",
+        backdropFilter: "blur(20px)",
       }}
     >
       <div
         style={{
-          height: 140,
+          width: 78,
+          height: 78,
+          flexShrink: 0,
+          borderRadius: 22,
           background: cover ? `url(${cover}) center/cover` : getProfileGradient(seller),
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          padding: 12,
+          position: "relative",
+          overflow: "hidden",
+          border: `1px solid ${T.line2}`,
         }}
       >
-        <span className="gold-badge">
-          {getTypeIcon(offer.type)} {offer.type}
-        </span>
-        {offer.boost_end > Date.now() && <span className="gold-badge">Boost</span>}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0),rgba(6,2,15,.46))" }} />
+        <div style={{ position: "absolute", left: 8, bottom: 8 }}>
+          <span className="gold-badge">{getTypeIcon(offer.type)}</span>
+        </div>
       </div>
-      <div style={{ padding: 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6, minHeight: 38 }}>{offer.title}</div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-          <div style={{ fontSize: 12, color: T.text2 }}>
-            @{getUsername(seller)} • {KIND_LABELS[offer.kind]}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{offer.title}</div>
+            <div style={{ fontSize: 12, color: T.text2 }}>
+              @{getUsername(seller)} • {KIND_LABELS[offer.kind]}
+            </div>
           </div>
           <CurBadge cur={offer.cur} price={offer.price} />
         </div>
-        <div style={{ fontSize: 12, color: T.text3 }}>
-          Продаж: {offer.sales || 0} • В наличии: {Math.max(0, Number(offer.stock ?? 1))}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          <span className="pill" style={{ padding: "6px 10px" }}>
+            {offer.type}
+          </span>
+          <span style={{ fontSize: 12, color: T.text3 }}>Продаж: {offer.sales || 0}</span>
+          <span style={{ fontSize: 12, color: T.text3 }}>В наличии: {Math.max(0, Number(offer.stock ?? 1))}</span>
+          {offer.boost_end > Date.now() && <span className="gold-badge">Boost</span>}
         </div>
       </div>
     </button>
@@ -775,10 +970,11 @@ function OfferSheet({
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div
           style={{
-            height: 180,
-            borderRadius: 18,
+            height: 196,
+            borderRadius: 24,
             background: cover ? `url(${cover}) center/cover` : getProfileGradient(seller),
             border: `1px solid ${T.line}`,
+            boxShadow: "0 18px 40px rgba(4,2,12,.34)",
           }}
         />
         <div>
@@ -807,7 +1003,7 @@ function OfferSheet({
               gap: 12,
               padding: 14,
               textAlign: "left",
-              background: T.bg2,
+              background: "linear-gradient(180deg,rgba(27,20,51,.82),rgba(12,9,25,.92))",
               color: T.text,
               cursor: "pointer",
             }}
@@ -1191,7 +1387,7 @@ function UserProfileSheet({
                 style={{
                   fontSize: 22,
                   color: user.name_color || T.text,
-                  fontFamily: user.name_font ? `'${user.name_font}',sans-serif` : "'Syne',sans-serif",
+                  fontFamily: user.name_font ? `'${user.name_font}',sans-serif` : "'Sora',sans-serif",
                 }}
               >
                 @{getUsername(user)}
@@ -1232,7 +1428,7 @@ function UserProfileSheet({
         {loading && <Spinner />}
         {!loading && offers.length === 0 && <div style={{ color: T.text3, fontSize: 13 }}>У продавца пока нет активных предложений.</div>}
         {!loading && offers.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {offers.map((offer) => (
               <OfferCard key={offer.id} offer={offer} onOpen={onOpenOffer} />
             ))}
@@ -1282,7 +1478,6 @@ function HomeScreen({
   const [kindFilter, setKindFilter] = useState<OfferKind | "ALL">("ALL");
   const [currencyFilter, setCurrencyFilter] = useState<Currency | "ALL">("ALL");
   const [sort, setSort] = useState<"new" | "sales" | "price_asc" | "price_desc">("new");
-  const [compactHeader, setCompactHeader] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -1329,87 +1524,123 @@ function HomeScreen({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div
-        style={{
-          padding: "18px 16px 12px",
-          borderBottom: `1px solid ${T.line}`,
-          background: "rgba(8,7,5,.96)",
-          backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 5,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-          <div>
-            <div className="title" style={{ fontSize: 26 }}>
-              RoWorth
+      <div className="scroll" style={{ flex: 1, padding: "18px 16px 116px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <div
+              style={{
+                width: 54,
+                height: 54,
+                borderRadius: 20,
+                background: "linear-gradient(135deg,#8B5FFF,#5F8DFF 60%,#59CFFF)",
+                display: "grid",
+                placeItems: "center",
+                boxShadow: "0 22px 42px rgba(95,89,255,.34)",
+                flexShrink: 0,
+              }}
+            >
+              <span className="title" style={{ color: "#fff", fontSize: 26 }}>
+                R
+              </span>
             </div>
-            <div style={{ color: T.text3, fontSize: 12 }}>Маркет для Roblox-разработчиков</div>
+            <div style={{ minWidth: 0 }}>
+              <div className="title" style={{ fontSize: 26 }}>
+                RoWorth
+              </div>
+              <div style={{ color: T.text3, fontSize: 12, lineHeight: 1.6 }}>
+                liquid market для Roblox-разработчиков
+              </div>
+            </div>
           </div>
-          <StarsBadge value={me.stars} />
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateRows: compactHeader ? "0fr" : "1fr",
-            opacity: compactHeader ? 0 : 1,
-            transform: compactHeader ? "translateY(-10px)" : "translateY(0)",
-            transition: "opacity .24s ease, transform .24s ease, grid-template-rows .24s ease",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ minHeight: 0 }}>
-            <input className="inp" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по товарам и услугам..." />
-
-            <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
-              {[{ label: "Все", value: "ALL" }, ...Object.entries(KIND_LABELS).map(([value, label]) => ({ label, value }))].map((item) => (
-                <button key={item.value} className={`pill${kindFilter === item.value ? " active" : ""}`} onClick={() => setKindFilter(item.value as OfferKind | "ALL")}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-              <select className="inp" value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as Currency | "ALL")}>
-                <option value="ALL">Любая валюта</option>
-                <option value="STARS">Stars</option>
-                <option value="ROBUX">Robux</option>
-              </select>
-              <select className="inp" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-                <option value="new">Сначала новые</option>
-                <option value="sales">По продажам</option>
-                <option value="price_asc">Цена по возрастанию</option>
-                <option value="price_desc">Цена по убыванию</option>
-              </select>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <StarsBadge value={me.stars} />
+            <div className="panel" style={{ padding: "8px 12px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 800, color: T.text }}>
+              <span style={{ color: T.blue }}>R$</span>
+              <span>{me.robux}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div
-        className="scroll"
-        style={{ flex: 1, padding: 16 }}
-        onScroll={(event) => {
-          const nextCompact = event.currentTarget.scrollTop > 48;
-          setCompactHeader((current) => (current === nextCompact ? current : nextCompact));
-        }}
-      >
         <div
           className="card"
           style={{
             padding: 18,
-            marginBottom: 14,
-            background: "linear-gradient(135deg,rgba(212,168,67,.18),rgba(90,143,196,.18))",
+            marginBottom: 16,
+            background: "linear-gradient(135deg,rgba(140,95,255,.88),rgba(111,64,255,.62) 45%,rgba(92,177,255,.46) 100%)",
           }}
         >
-          <div className="title" style={{ fontSize: 20, marginBottom: 6 }}>
-            Покупай и продавай в Telegram
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+            <div>
+              <div className="pill" style={{ background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "rgba(255,255,255,.2)", marginBottom: 12 }}>
+                витрина недели
+              </div>
+              <div className="title" style={{ fontSize: 34, lineHeight: 1.02, color: "#fff", marginBottom: 8 }}>
+                Liquid
+                <br />
+                Marketplace
+              </div>
+              <div style={{ color: "rgba(255,255,255,.84)", lineHeight: 1.6, maxWidth: 260 }}>
+                Публикуй офферы, отвечай в чатах и закрывай продажи прямо внутри Telegram.
+              </div>
+            </div>
+            <div style={{ display: "grid", gap: 10, justifyItems: "end" }}>
+              <div style={{ width: 66, height: 66, borderRadius: 24, background: "rgba(255,255,255,.18)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.3)" }} />
+              <div style={{ width: 42, height: 42, borderRadius: 16, background: "rgba(255,255,255,.14)" }} />
+            </div>
           </div>
-          <div style={{ color: T.text2, lineHeight: 1.6, fontSize: 13 }}>
-            После оплаты продавец получает уведомление в ЛС бота, а покупатель может оставить отзыв после подтверждения заказа.
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <span className="pill" style={{ background: "rgba(7,4,18,.2)", color: "#fff", borderColor: "rgba(255,255,255,.18)" }}>
+              {filtered.length} офферов
+            </span>
+            <span className="pill" style={{ background: "rgba(7,4,18,.2)", color: "#fff", borderColor: "rgba(255,255,255,.18)" }}>
+              realtime chat
+            </span>
+            <span className="pill" style={{ background: "rgba(7,4,18,.2)", color: "#fff", borderColor: "rgba(255,255,255,.18)" }}>
+              stars + robux
+            </span>
           </div>
+        </div>
+
+        <div className="panel" style={{ padding: 12, marginBottom: 12 }}>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.text3, fontSize: 16 }}>⌕</span>
+            <input
+              className="inp"
+              style={{ paddingLeft: 40 }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Поиск по товарам и услугам..."
+            />
+          </div>
+        </div>
+
+        <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 12, paddingBottom: 2 }}>
+          {[{ label: "Все", value: "ALL" }, ...Object.entries(KIND_LABELS).map(([value, label]) => ({ label, value }))].map((item) => (
+            <button key={item.value} className={`pill${kindFilter === item.value ? " active" : ""}`} onClick={() => setKindFilter(item.value as OfferKind | "ALL")}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+          <select className="inp" value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as Currency | "ALL")}>
+            <option value="ALL">Любая валюта</option>
+            <option value="STARS">Stars</option>
+            <option value="ROBUX">Robux</option>
+          </select>
+          <select className="inp" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+            <option value="new">Сначала новые</option>
+            <option value="sales">По продажам</option>
+            <option value="price_asc">Цена по возрастанию</option>
+            <option value="price_desc">Цена по убыванию</option>
+          </select>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+          <div className="title" style={{ fontSize: 19 }}>
+            Все офферы
+          </div>
+          <div style={{ color: T.text3, fontSize: 12 }}>{filtered.length} результатов</div>
         </div>
 
         {loading && (
@@ -1421,7 +1652,7 @@ function HomeScreen({
         {!loading && filtered.length === 0 && <div style={{ color: T.text3, textAlign: "center", padding: "60px 0" }}>Ничего не найдено.</div>}
 
         {!loading && filtered.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, paddingBottom: 90 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {filtered.map((offer) => (
               <OfferCard key={offer.id} offer={offer} onOpen={onOpenOffer} />
             ))}
@@ -1486,7 +1717,7 @@ function ChatsScreen({
   }, [me.id]);
 
   return (
-    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(118px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
       <SectionTitle
         right={
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1589,7 +1820,7 @@ function ChatView({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${T.line}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${T.line}`, background: "rgba(8,6,18,.46)", backdropFilter: "blur(18px)" }}>
         <button className="btn-ghost" onClick={onBack}>
           Назад
         </button>
@@ -1605,7 +1836,7 @@ function ChatView({
         </button>
       </div>
 
-      <div className="scroll" style={{ flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="scroll" style={{ flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 10, background: "linear-gradient(180deg,rgba(255,255,255,.01),rgba(255,255,255,0))" }}>
         {messages.map((message) => {
           const mine = message.from_uid === me.id;
           const system = isSystemMessage(message);
@@ -1617,11 +1848,12 @@ function ChatView({
                   style={{
                     maxWidth: "92%",
                     padding: "10px 14px",
-                    borderRadius: 16,
+                    borderRadius: 18,
                     background: "rgba(255,255,255,.04)",
                     border: `1px solid ${T.line2}`,
                     color: T.text2,
                     textAlign: "center",
+                    backdropFilter: "blur(18px)",
                   }}
                 >
                   <div style={{ lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{message.text}</div>
@@ -1637,10 +1869,15 @@ function ChatView({
                 style={{
                   maxWidth: "78%",
                   padding: "12px 14px",
-                  borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  background: support ? "rgba(90,143,196,.12)" : mine ? "rgba(212,168,67,.12)" : T.bg2,
-                  border: `1px solid ${support ? "rgba(90,143,196,.35)" : mine ? "rgba(212,168,67,.25)" : T.line}`,
-                  boxShadow: support ? "0 0 0 1px rgba(90,143,196,.15) inset" : "none",
+                  borderRadius: mine ? "22px 22px 8px 22px" : "22px 22px 22px 8px",
+                  background: support
+                    ? "linear-gradient(135deg,rgba(105,200,255,.20),rgba(154,99,255,.18))"
+                    : mine
+                      ? "linear-gradient(135deg,rgba(139,95,255,.34),rgba(89,207,255,.22))"
+                      : "linear-gradient(180deg,rgba(27,20,51,.82),rgba(12,9,25,.92))",
+                  border: `1px solid ${support ? "rgba(105,200,255,.26)" : mine ? "rgba(154,99,255,.26)" : T.line}`,
+                  boxShadow: support ? "0 14px 30px rgba(60,120,255,.12)" : "0 14px 30px rgba(4,2,12,.2)",
+                  backdropFilter: "blur(18px)",
                 }}
               >
                 {support && (
@@ -1660,7 +1897,7 @@ function ChatView({
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ borderTop: `1px solid ${T.line}`, padding: 12, paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ borderTop: `1px solid ${T.line}`, padding: 12, paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))", background: "rgba(8,6,18,.56)", backdropFilter: "blur(18px)" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
           <button className={`pill${showStickerPicker ? " active" : ""}`} disabled={sending} onClick={() => setShowStickerPicker((current) => !current)}>
             Стикеры
@@ -1908,7 +2145,7 @@ function OrdersScreen({
   const completedSellerOrders = sellerOrders.filter((order) => order.status === "confirmed");
 
   return (
-    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(118px + env(safe-area-inset-bottom, 0px))" }}>
       <SectionTitle>Заказы</SectionTitle>
       {loading && <Spinner />}
       {!loading && sellerOrders.length === 0 && buyerOrders.length === 0 && <div style={{ color: T.text3 }}>Пока нет заказов.</div>}
@@ -2042,7 +2279,7 @@ function ProfileScreen({
     avatar_url: me.avatar_url || "",
     avatar_gif_url: me.avatar_gif_url || "",
     name_color: me.name_color || "",
-    name_font: me.name_font || "Syne",
+    name_font: me.name_font || "Sora",
     theme_color: me.theme_color || "",
     theme_color_2: me.theme_color_2 || "",
     profile_banner: me.profile_banner || "",
@@ -2068,7 +2305,7 @@ function ProfileScreen({
       avatar_url: draft.avatar_url || null,
       avatar_gif_url: canCustomizeProfile(me) ? draft.avatar_gif_url || null : null,
       name_color: canCustomizeProfile(me) ? draft.name_color || null : null,
-      name_font: canCustomizeProfile(me) ? draft.name_font || "Syne" : "Syne",
+      name_font: canCustomizeProfile(me) ? draft.name_font || "Sora" : "Sora",
       theme_color: canCustomizeProfile(me) ? draft.theme_color || null : null,
       theme_color_2: canCustomizeProfile(me) ? draft.theme_color_2 || null : null,
       profile_banner: canCustomizeProfile(me) ? draft.profile_banner || null : null,
@@ -2091,32 +2328,31 @@ function ProfileScreen({
   };
 
   return (
-    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
+    <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(118px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
       <div
+        className="card"
         style={{
-          height: 130,
-          borderRadius: 18,
-          background: me.profile_banner ? `url(${me.profile_banner}) center/cover` : getProfileGradient(me),
-          border: `1px solid ${T.line}`,
+          padding: 14,
           marginBottom: 16,
+          background: me.profile_banner ? `linear-gradient(180deg,rgba(10,7,20,.16),rgba(10,7,20,.65)),url(${me.profile_banner}) center/cover` : getProfileGradient(me),
         }}
-      />
-
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-        <Avatar user={me} size={74} />
-        <div style={{ flex: 1 }}>
-          <div
-            className="title"
-            style={{
-              fontSize: 24,
-              color: me.name_color || T.text,
-              fontFamily: me.name_font ? `'${me.name_font}',sans-serif` : "'Syne',sans-serif",
-            }}
-          >
-            {getDisplayName(me)}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <Avatar user={me} size={74} />
+          <div style={{ flex: 1 }}>
+            <div
+              className="title"
+              style={{
+                fontSize: 24,
+                color: me.name_color || T.text,
+                fontFamily: me.name_font ? `'${me.name_font}',sans-serif` : "'Sora',sans-serif",
+              }}
+            >
+              {getDisplayName(me)}
+            </div>
+            <div style={{ color: "rgba(255,255,255,.86)", marginTop: 4 }}>@{getUsername(me)}</div>
+            <div style={{ color: "rgba(255,255,255,.66)", fontSize: 12, marginTop: 4 }}>Market ID #{me.marketplace_id || "—"}</div>
           </div>
-          <div style={{ color: T.text2, marginTop: 4 }}>@{getUsername(me)}</div>
-          <div style={{ color: T.text3, fontSize: 12, marginTop: 4 }}>Market ID #{me.marketplace_id || "—"}</div>
         </div>
       </div>
 
@@ -2205,7 +2441,7 @@ function ProfileScreen({
       <SectionTitle right={<span style={{ color: T.text3, fontSize: 12 }}>{offers.length}/{getOfferSlotLimit(me)}</span>}>Мои предложения</SectionTitle>
       {offers.length === 0 && <div style={{ color: T.text3, marginBottom: 18 }}>У тебя пока нет активных предложений.</div>}
       {offers.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
           {offers.map((offer) => (
             <div key={offer.id} style={{ position: "relative" }}>
               <OfferCard offer={offer} onOpen={onOpenOffer} />
@@ -2213,15 +2449,16 @@ function ProfileScreen({
                 onClick={() => deleteOffer(offer.id)}
                 style={{
                   position: "absolute",
-                  top: 10,
-                  right: 10,
-                  width: 30,
-                  height: 30,
+                  top: 14,
+                  right: 14,
+                  width: 34,
+                  height: 34,
                   borderRadius: 999,
-                  border: "none",
-                  background: "rgba(0,0,0,.65)",
+                  border: "1px solid rgba(255,255,255,.12)",
+                  background: "rgba(9,6,18,.82)",
                   color: "#fff",
                   cursor: "pointer",
+                  backdropFilter: "blur(18px)",
                 }}
               >
                 ×
@@ -3019,7 +3256,7 @@ function TabBar({
   isAdmin?: boolean;
 }) {
   const NavIcon = ({ name, active }: { name: "home" | "chat" | "plus" | "orders" | "profile" | "admin"; active: boolean }) => {
-    const color = active ? "#000" : "#fff";
+    const color = active ? "#fff" : "rgba(247,242,255,.72)";
     const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
     if (name === "home") return <svg {...common}><path d="M3 10.8 12 4l9 6.8" /><path d="M5.5 10.5V20h13V10.5" /></svg>;
     if (name === "chat") return <svg {...common}><path d="M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" /></svg>;
@@ -3039,7 +3276,23 @@ function TabBar({
   if (isAdmin) items.push({ id: "admin", label: "Админ", icon: "admin" as const });
 
   return (
-    <div style={{ display: "flex", borderTop: `1px solid ${T.line}`, background: "#000", minHeight: 72, paddingBottom: "env(safe-area-inset-bottom, 0px)", flexShrink: 0 }}>
+    <div
+      style={{
+        position: "absolute",
+        left: 16,
+        right: 16,
+        bottom: 12,
+        display: "flex",
+        padding: 8,
+        borderRadius: 28,
+        background: "linear-gradient(180deg,rgba(25,18,49,.82),rgba(9,6,19,.96))",
+        border: `1px solid ${T.line2}`,
+        boxShadow: "0 24px 50px rgba(4,2,12,.6)",
+        backdropFilter: "blur(24px)",
+        zIndex: 40,
+        paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
       {items.map((item) => {
         const active = tab === item.id;
         const handleClick = item.action || (() => setTab(item.id));
@@ -3062,18 +3315,19 @@ function TabBar({
           >
             <span
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 14,
-                background: active ? "#fff" : "transparent",
-                border: active ? "1px solid rgba(255,255,255,.9)" : "1px solid rgba(255,255,255,.12)",
+                width: 42,
+                height: 42,
+                borderRadius: 16,
+                background: active ? "linear-gradient(135deg,#8B5FFF,#5F8DFF 62%,#59CFFF)" : "rgba(255,255,255,.04)",
+                border: active ? "1px solid rgba(255,255,255,.2)" : "1px solid rgba(255,255,255,.06)",
                 display: "grid",
                 placeItems: "center",
+                boxShadow: active ? "0 14px 26px rgba(95,89,255,.28)" : "none",
               }}
             >
               <NavIcon name={item.icon} active={active} />
             </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{item.label}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: active ? T.text : T.text3 }}>{item.label}</span>
             {item.badge ? (
               <span
                 style={{
@@ -3083,8 +3337,8 @@ function TabBar({
                   minWidth: 18,
                   height: 18,
                   borderRadius: 999,
-                  background: item.id === "orders" ? "#fff" : T.gold,
-                  color: "#000",
+                  background: item.id === "orders" ? T.blue : T.red,
+                  color: "#fff",
                   fontSize: 10,
                   fontWeight: 800,
                   display: "grid",
@@ -3536,10 +3790,25 @@ export default function App() {
   }
 
   return (
-    <div style={{ maxWidth: 540, margin: "0 auto", height: "100dvh", background: T.bg, display: "flex", flexDirection: "column" }}>
+    <div
+      style={{
+        maxWidth: 560,
+        margin: "0 auto",
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        overflow: "hidden",
+        background:
+          "radial-gradient(circle at 14% -4%, rgba(155,96,255,.24), transparent 28%), radial-gradient(circle at 90% 14%, rgba(89,207,255,.16), transparent 24%), linear-gradient(180deg, rgba(11,8,23,.98), rgba(5,3,13,1))",
+        borderLeft: `1px solid ${T.line}`,
+        borderRight: `1px solid ${T.line}`,
+      }}
+    >
+      <div style={{ position: "absolute", inset: -120, pointerEvents: "none", background: "radial-gradient(circle at 24% 18%, rgba(154,99,255,.16), transparent 24%), radial-gradient(circle at 78% 26%, rgba(105,200,255,.12), transparent 22%)" }} />
       <style>{`${CSS}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      <div style={{ flex: 1, overflow: "hidden" }}>
+      <div style={{ flex: 1, overflow: "hidden", position: "relative", zIndex: 1 }}>
         {chatUser ? (
           <ChatView
             me={me}
