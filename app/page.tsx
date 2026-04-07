@@ -1525,7 +1525,7 @@ function HomeScreen({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div className="scroll" style={{ flex: 1, padding: "18px 16px 116px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
             <div
               style={{
@@ -1543,13 +1543,8 @@ function HomeScreen({
                 R
               </span>
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div className="title" style={{ fontSize: 26 }}>
-                RoWorth
-              </div>
-              <div style={{ color: T.text3, fontSize: 12, lineHeight: 1.6 }}>
-                liquid market для Roblox-разработчиков
-              </div>
+            <div className="title" style={{ fontSize: 26, minWidth: 0 }}>
+              RoWorth
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
@@ -1558,46 +1553,6 @@ function HomeScreen({
               <span style={{ color: T.blue }}>R$</span>
               <span>{me.robux}</span>
             </div>
-          </div>
-        </div>
-
-        <div
-          className="card"
-          style={{
-            padding: 18,
-            marginBottom: 16,
-            background: "linear-gradient(135deg,rgba(140,95,255,.88),rgba(111,64,255,.62) 45%,rgba(92,177,255,.46) 100%)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-            <div>
-              <div className="pill" style={{ background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "rgba(255,255,255,.2)", marginBottom: 12 }}>
-                витрина недели
-              </div>
-              <div className="title" style={{ fontSize: 34, lineHeight: 1.02, color: "#fff", marginBottom: 8 }}>
-                Liquid
-                <br />
-                Marketplace
-              </div>
-              <div style={{ color: "rgba(255,255,255,.84)", lineHeight: 1.6, maxWidth: 260 }}>
-                Публикуй офферы, отвечай в чатах и закрывай продажи прямо внутри Telegram.
-              </div>
-            </div>
-            <div style={{ display: "grid", gap: 10, justifyItems: "end" }}>
-              <div style={{ width: 66, height: 66, borderRadius: 24, background: "rgba(255,255,255,.18)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.3)" }} />
-              <div style={{ width: 42, height: 42, borderRadius: 16, background: "rgba(255,255,255,.14)" }} />
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <span className="pill" style={{ background: "rgba(7,4,18,.2)", color: "#fff", borderColor: "rgba(255,255,255,.18)" }}>
-              {filtered.length} офферов
-            </span>
-            <span className="pill" style={{ background: "rgba(7,4,18,.2)", color: "#fff", borderColor: "rgba(255,255,255,.18)" }}>
-              realtime chat
-            </span>
-            <span className="pill" style={{ background: "rgba(7,4,18,.2)", color: "#fff", borderColor: "rgba(255,255,255,.18)" }}>
-              stars + robux
-            </span>
           </div>
         </div>
 
@@ -1926,12 +1881,12 @@ function ChatView({
             ))}
           </div>
         )}
-        <div style={{ display: "flex", gap: 10, alignItems: "stretch", flexWrap: "wrap" }}>
-          <textarea className="inp" rows={2} value={text} onChange={(e) => setText(e.target.value.slice(0, 400))} placeholder="Сообщение..." style={{ flex: 1, minWidth: 220 }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <textarea className="inp" rows={2} value={text} onChange={(e) => setText(e.target.value.slice(0, 400))} placeholder="Сообщение..." style={{ width: "100%", minWidth: 0 }} />
           <button
             className="btn-primary"
             disabled={sending}
-            style={{ alignSelf: "stretch", minWidth: 130 }}
+            style={{ width: "100%" }}
             onClick={async () => {
               if (!text.trim()) return;
               setSending(true);
@@ -2443,25 +2398,20 @@ function ProfileScreen({
       {offers.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
           {offers.map((offer) => (
-            <div key={offer.id} style={{ position: "relative" }}>
+            <div key={offer.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <OfferCard offer={offer} onOpen={onOpenOffer} />
               <button
                 onClick={() => deleteOffer(offer.id)}
+                className="btn-ghost"
                 style={{
-                  position: "absolute",
-                  top: 14,
-                  right: 14,
-                  width: 34,
-                  height: 34,
+                  alignSelf: "flex-end",
+                  padding: "8px 12px",
                   borderRadius: 999,
-                  border: "1px solid rgba(255,255,255,.12)",
-                  background: "rgba(9,6,18,.82)",
-                  color: "#fff",
-                  cursor: "pointer",
-                  backdropFilter: "blur(18px)",
+                  fontSize: 12,
+                  fontWeight: 800,
                 }}
               >
-                ×
+                Удалить
               </button>
             </div>
           ))}
@@ -3255,6 +3205,7 @@ function TabBar({
   onCreate: () => void;
   isAdmin?: boolean;
 }) {
+  const compact = Boolean(isAdmin);
   const NavIcon = ({ name, active }: { name: "home" | "chat" | "plus" | "orders" | "profile" | "admin"; active: boolean }) => {
     const color = active ? "#fff" : "rgba(247,242,255,.72)";
     const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -3279,18 +3230,18 @@ function TabBar({
     <div
       style={{
         position: "absolute",
-        left: 16,
-        right: 16,
-        bottom: 12,
+        left: compact ? 12 : 16,
+        right: compact ? 12 : 16,
+        bottom: 10,
         display: "flex",
-        padding: 8,
-        borderRadius: 28,
+        padding: compact ? 6 : 8,
+        borderRadius: compact ? 24 : 28,
         background: "linear-gradient(180deg,rgba(25,18,49,.82),rgba(9,6,19,.96))",
         border: `1px solid ${T.line2}`,
         boxShadow: "0 24px 50px rgba(4,2,12,.6)",
         backdropFilter: "blur(24px)",
         zIndex: 40,
-        paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: compact ? "calc(6px + env(safe-area-inset-bottom, 0px))" : "calc(8px + env(safe-area-inset-bottom, 0px))",
       }}
     >
       {items.map((item) => {
@@ -3308,16 +3259,18 @@ function TabBar({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 6,
+              gap: compact ? 4 : 6,
               cursor: "pointer",
               position: "relative",
+              minWidth: 0,
+              padding: compact ? "2px 0" : undefined,
             }}
           >
             <span
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 16,
+                width: compact ? 38 : 42,
+                height: compact ? 38 : 42,
+                borderRadius: compact ? 14 : 16,
                 background: active ? "linear-gradient(135deg,#8B5FFF,#5F8DFF 62%,#59CFFF)" : "rgba(255,255,255,.04)",
                 border: active ? "1px solid rgba(255,255,255,.2)" : "1px solid rgba(255,255,255,.06)",
                 display: "grid",
@@ -3327,13 +3280,13 @@ function TabBar({
             >
               <NavIcon name={item.icon} active={active} />
             </span>
-            <span style={{ fontSize: 11, fontWeight: 800, color: active ? T.text : T.text3 }}>{item.label}</span>
+            <span style={{ fontSize: compact ? 10 : 11, fontWeight: 800, color: active ? T.text : T.text3, lineHeight: 1, whiteSpace: "nowrap" }}>{item.label}</span>
             {item.badge ? (
               <span
                 style={{
                   position: "absolute",
-                  top: 8,
-                  right: "22%",
+                  top: compact ? 4 : 8,
+                  right: compact ? "18%" : "22%",
                   minWidth: 18,
                   height: 18,
                   borderRadius: 999,
