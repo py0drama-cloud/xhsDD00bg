@@ -261,7 +261,7 @@ body::after{
 }
 button,input,textarea,select{font:inherit}
 button{outline:none}
-.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .card,.panel{
   position:relative;
   overflow:hidden;
@@ -309,11 +309,14 @@ select.inp{
     linear-gradient(45deg,transparent 50%,${T.text2} 50%),
     linear-gradient(135deg,${T.text2} 50%,transparent 50%);
   background-position:
-    calc(100% - 20px) calc(50% - 3px),
-    calc(100% - 14px) calc(50% - 3px);
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
   background-size:6px 6px,6px 6px;
   background-repeat:no-repeat;
-  padding-right:40px
+  padding:12px 34px 12px 14px;
+  min-width:0;
+  font-size:14px;
+  line-height:1.25
 }
 .btn-primary{
   display:inline-flex;
@@ -374,8 +377,18 @@ select.inp{
   border:1px solid rgba(255,255,255,.08)
 }
 .hide-scrollbar::-webkit-scrollbar{display:none}
+.home-select-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.chat-shortcuts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.chat-shortcuts-grid > *{min-width:0}
+.chat-shell{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden}
+.chat-feed{flex:1;min-height:0;padding:16px 16px 12px;background:linear-gradient(180deg,rgba(255,255,255,.01),rgba(255,255,255,0))}
+.chat-feed-inner{display:flex;flex-direction:column;gap:10px;min-height:100%}
+.chat-feed-stack{display:flex;flex-direction:column;gap:10px;margin-top:auto}
 .scroll::-webkit-scrollbar{width:6px}
 .scroll::-webkit-scrollbar-thumb{background:rgba(219,203,255,.16);border-radius:999px}
+@media (max-width:420px){
+  .home-select-grid,.chat-shortcuts-grid{grid-template-columns:1fr}
+}
 `;
 
 function shortOrderId(id: string) {
@@ -1579,13 +1592,13 @@ function HomeScreen({
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-          <select className="inp" value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as Currency | "ALL")}>
+        <div className="home-select-grid">
+          <select className="inp" style={{ minWidth: 0 }} value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as Currency | "ALL")}>
             <option value="ALL">Любая валюта</option>
             <option value="STARS">Stars</option>
             <option value="ROBUX">Robux</option>
           </select>
-          <select className="inp" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+          <select className="inp" style={{ minWidth: 0 }} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
             <option value="new">Сначала новые</option>
             <option value="sales">По продажам</option>
             <option value="price_asc">Цена по возрастанию</option>
@@ -1676,11 +1689,11 @@ function ChatsScreen({
   return (
     <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(118px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
       <SectionTitle>Сообщения</SectionTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-        <button className="btn-ghost" onClick={onOpenSupportChat}>
+      <div className="chat-shortcuts-grid">
+        <button className="btn-ghost" style={{ width: "100%" }} onClick={onOpenSupportChat}>
           Чат саппорта
         </button>
-        <button className="btn-ghost" onClick={onOpenSupport}>
+        <button className="btn-ghost" style={{ width: "100%" }} onClick={onOpenSupport}>
           Заявка
         </button>
       </div>
@@ -1764,104 +1777,100 @@ function ChatView({
   const [sending, setSending] = useState(false);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messageListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const node = messageListRef.current;
+    if (!node) return;
+    const raf = window.requestAnimationFrame(() => {
+      node.scrollTop = node.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(raf);
   }, [messages]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${T.line}`, background: "rgba(8,6,18,.46)", backdropFilter: "blur(18px)" }}>
+    <div className="chat-shell">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${T.line}`, background: "rgba(8,6,18,.46)", backdropFilter: "blur(18px)", flexShrink: 0 }}>
         <button className="btn-ghost" onClick={onBack}>
           Назад
         </button>
         <button
           onClick={() => onOpenProfile(partner)}
-          style={{ display: "flex", alignItems: "center", gap: 12, background: "transparent", border: "none", color: T.text, cursor: "pointer", padding: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: 12, background: "transparent", border: "none", color: T.text, cursor: "pointer", padding: 0, minWidth: 0, flex: 1 }}
         >
           <Avatar user={partner} size={46} />
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontWeight: 700 }}>{mode === "support" ? `Саппорт • @${getUsername(partner)}` : `@${getUsername(partner)}`}</div>
-            <div style={{ fontSize: 12, color: T.text3 }}>{mode === "support" ? "Отдельный чат поддержки" : `Market ID #${partner.marketplace_id || "—"}`}</div>
+          <div style={{ textAlign: "left", minWidth: 0 }}>
+            <div style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mode === "support" ? `Саппорт • @${getUsername(partner)}` : `@${getUsername(partner)}`}</div>
+            <div style={{ fontSize: 12, color: T.text3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mode === "support" ? "Отдельный чат поддержки" : `Market ID #${partner.marketplace_id || "—"}`}</div>
           </div>
         </button>
       </div>
 
-      <div
-        className="scroll"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          padding: "16px 16px 12px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          justifyContent: "flex-end",
-          background: "linear-gradient(180deg,rgba(255,255,255,.01),rgba(255,255,255,0))",
-        }}
-      >
-        {messages.map((message) => {
-          const mine = message.from_uid === me.id;
-          const system = isSystemMessage(message);
-          const support = isSupportMessage(message);
-          if (system) {
-            return (
-              <div key={message.id} style={{ display: "flex", justifyContent: "center" }}>
-                <div
-                  style={{
-                    maxWidth: "92%",
-                    padding: "10px 14px",
-                    borderRadius: 18,
-                    background: "rgba(255,255,255,.04)",
-                    border: `1px solid ${T.line2}`,
-                    color: T.text2,
-                    textAlign: "center",
-                    backdropFilter: "blur(18px)",
-                  }}
-                >
-                  <div style={{ lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{message.text}</div>
-                  <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div key={message.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
-              <div
-                style={{
-                  maxWidth: "82%",
-                  padding: "12px 14px",
-                  borderRadius: mine ? "22px 22px 8px 22px" : "22px 22px 22px 8px",
-                  background: support
-                    ? "linear-gradient(135deg,rgba(105,200,255,.20),rgba(154,99,255,.18))"
-                    : mine
-                      ? "linear-gradient(135deg,rgba(139,95,255,.34),rgba(89,207,255,.22))"
-                      : "linear-gradient(180deg,rgba(27,20,51,.82),rgba(12,9,25,.92))",
-                  border: `1px solid ${support ? "rgba(105,200,255,.26)" : mine ? "rgba(154,99,255,.26)" : T.line}`,
-                  boxShadow: support ? "0 14px 30px rgba(60,120,255,.12)" : "0 14px 30px rgba(4,2,12,.2)",
-                  backdropFilter: "blur(18px)",
-                }}
-              >
-                {support && (
-                  <div style={{ fontSize: 11, fontWeight: 700, color: T.blue, marginBottom: 6 }}>
-                    {mine ? "Ответ саппорта" : "Сообщение саппорта"}
+      <div ref={messageListRef} className="scroll chat-feed">
+        <div className="chat-feed-inner">
+          <div className="chat-feed-stack">
+            {messages.map((message) => {
+              const mine = message.from_uid === me.id;
+              const system = isSystemMessage(message);
+              const support = isSupportMessage(message);
+              if (system) {
+                return (
+                  <div key={message.id} style={{ display: "flex", justifyContent: "center" }}>
+                    <div
+                      style={{
+                        maxWidth: "92%",
+                        padding: "10px 14px",
+                        borderRadius: 18,
+                        background: "rgba(255,255,255,.04)",
+                        border: `1px solid ${T.line2}`,
+                        color: T.text2,
+                        textAlign: "center",
+                        backdropFilter: "blur(18px)",
+                      }}
+                    >
+                      <div style={{ lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{message.text}</div>
+                      <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
+                    </div>
                   </div>
-                )}
-                  {message.img ? (
-                    <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block" }} />
-                  ) : null}
-                  {message.text ? <div style={{ lineHeight: 1.6, marginTop: message.img ? 10 : 0 }}>{message.text}</div> : null}
-                  <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
+                );
+              }
+
+              return (
+                <div key={message.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
+                  <div
+                    style={{
+                      maxWidth: "82%",
+                      padding: "12px 14px",
+                      borderRadius: mine ? "22px 22px 8px 22px" : "22px 22px 22px 8px",
+                      background: support
+                        ? "linear-gradient(135deg,rgba(105,200,255,.20),rgba(154,99,255,.18))"
+                        : mine
+                          ? "linear-gradient(135deg,rgba(139,95,255,.34),rgba(89,207,255,.22))"
+                          : "linear-gradient(180deg,rgba(27,20,51,.82),rgba(12,9,25,.92))",
+                      border: `1px solid ${support ? "rgba(105,200,255,.26)" : mine ? "rgba(154,99,255,.26)" : T.line}`,
+                      boxShadow: support ? "0 14px 30px rgba(60,120,255,.12)" : "0 14px 30px rgba(4,2,12,.2)",
+                      backdropFilter: "blur(18px)",
+                    }}
+                  >
+                    {support && (
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.blue, marginBottom: 6 }}>
+                        {mine ? "Ответ саппорта" : "Сообщение саппорта"}
+                      </div>
+                    )}
+                    {message.img ? (
+                      <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block" }} />
+                    ) : null}
+                    {message.text ? <div style={{ lineHeight: 1.6, marginTop: message.img ? 10 : 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{message.text}</div> : null}
+                    <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
+                  </div>
                 </div>
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      <div style={{ borderTop: `1px solid ${T.line}`, padding: 12, paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))", background: "rgba(8,6,18,.56)", backdropFilter: "blur(18px)" }}>
+      <div style={{ borderTop: `1px solid ${T.line}`, padding: 12, paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))", background: "rgba(8,6,18,.56)", backdropFilter: "blur(18px)", flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
           <button className={`pill${showStickerPicker ? " active" : ""}`} disabled={sending} onClick={() => setShowStickerPicker((current) => !current)}>
             Стикеры
@@ -3087,46 +3096,48 @@ function AdminSheet({
                       style={{
                         maxHeight: 320,
                         minHeight: 140,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "flex-end",
-                        gap: 8,
                         padding: 4,
                         borderRadius: 18,
                         background: "rgba(10,8,22,.46)",
                         border: `1px solid ${T.line}`,
+                        overflowY: "auto",
+                        overscrollBehavior: "contain",
                       }}
                     >
-                      {dialogMessages.length === 0 && <div style={{ color: T.text3, padding: 8 }}>Сообщений пока нет.</div>}
-                      {dialogMessages.map((message) => {
-                        const fromOwner = message.from_uid === foundUser.id;
-                        return (
-                          <div key={message.id} style={{ display: "flex", justifyContent: fromOwner ? "flex-end" : "flex-start" }}>
-                            <div
-                              style={{
-                                maxWidth: "88%",
-                                padding: "10px 12px",
-                                borderRadius: fromOwner ? "18px 18px 8px 18px" : "18px 18px 18px 8px",
-                                background: fromOwner
-                                  ? "linear-gradient(135deg,rgba(139,95,255,.30),rgba(89,207,255,.18))"
-                                  : "linear-gradient(180deg,rgba(27,20,51,.82),rgba(12,9,25,.92))",
-                                border: `1px solid ${fromOwner ? "rgba(154,99,255,.24)" : T.line}`,
-                                boxShadow: "0 12px 24px rgba(4,2,12,.18)",
-                              }}
-                            >
-                              <div style={{ color: T.text3, fontSize: 11, marginBottom: 6 }}>
-                                {fromOwner ? `@${getUsername(foundUser)}` : `@${getUsername(inspectedDialogUser)}`} • {formatTime(message.created_at)}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: "100%" }}>
+                        {dialogMessages.length === 0 && <div style={{ color: T.text3, padding: 8 }}>Сообщений пока нет.</div>}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "auto" }}>
+                          {dialogMessages.map((message) => {
+                            const fromOwner = message.from_uid === foundUser.id;
+                            return (
+                              <div key={message.id} style={{ display: "flex", justifyContent: fromOwner ? "flex-end" : "flex-start" }}>
+                                <div
+                                  style={{
+                                    maxWidth: "88%",
+                                    padding: "10px 12px",
+                                    borderRadius: fromOwner ? "18px 18px 8px 18px" : "18px 18px 18px 8px",
+                                    background: fromOwner
+                                      ? "linear-gradient(135deg,rgba(139,95,255,.30),rgba(89,207,255,.18))"
+                                      : "linear-gradient(180deg,rgba(27,20,51,.82),rgba(12,9,25,.92))",
+                                    border: `1px solid ${fromOwner ? "rgba(154,99,255,.24)" : T.line}`,
+                                    boxShadow: "0 12px 24px rgba(4,2,12,.18)",
+                                  }}
+                                >
+                                  <div style={{ color: T.text3, fontSize: 11, marginBottom: 6 }}>
+                                    {fromOwner ? `@${getUsername(foundUser)}` : `@${getUsername(inspectedDialogUser)}`} • {formatTime(message.created_at)}
+                                  </div>
+                                  {message.img ? (
+                                    <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 220, borderRadius: 10, display: "block", marginBottom: message.text ? 8 : 0 }} />
+                                  ) : null}
+                                  <div style={{ color: T.text2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                                    {message.text || (message.img ? "" : "Пустое сообщение")}
+                                  </div>
+                                </div>
                               </div>
-                              {message.img ? (
-                                <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 220, borderRadius: 10, display: "block", marginBottom: message.text ? 8 : 0 }} />
-                              ) : null}
-                              <div style={{ color: T.text2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                                {message.text || (message.img ? "" : "Пустое сообщение")}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                     <button className="btn-primary" style={{ width: "100%", marginTop: 10 }} disabled={working} onClick={injectAdminMessageIntoDialog}>
                       Отправить в этот чат как администрация
@@ -3806,7 +3817,7 @@ export default function App() {
       <div style={{ position: "absolute", inset: -120, pointerEvents: "none", background: "radial-gradient(circle at 24% 18%, rgba(154,99,255,.16), transparent 24%), radial-gradient(circle at 78% 26%, rgba(105,200,255,.12), transparent 22%)" }} />
       <style>{`${CSS}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      <div style={{ flex: 1, overflow: "hidden", position: "relative", zIndex: 1 }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative", zIndex: 1 }}>
         {chatUser ? (
           <ChatView
             me={me}
