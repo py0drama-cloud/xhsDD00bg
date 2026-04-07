@@ -1527,7 +1527,7 @@ function HomeScreen({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div className="scroll" style={{ flex: 1, padding: "18px 16px 116px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
             <div
               style={{
@@ -1549,7 +1549,7 @@ function HomeScreen({
               RoWorth
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <StarsBadge value={me.stars} />
             <div className="panel" style={{ padding: "8px 12px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 800, color: T.text }}>
               <span style={{ color: T.blue }}>R$</span>
@@ -1771,7 +1771,7 @@ function ChatView({
   }, [messages]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${T.line}`, background: "rgba(8,6,18,.46)", backdropFilter: "blur(18px)" }}>
         <button className="btn-ghost" onClick={onBack}>
           Назад
@@ -1788,7 +1788,19 @@ function ChatView({
         </button>
       </div>
 
-      <div className="scroll" style={{ flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 10, background: "linear-gradient(180deg,rgba(255,255,255,.01),rgba(255,255,255,0))" }}>
+      <div
+        className="scroll"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          padding: "16px 16px 12px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          justifyContent: "flex-end",
+          background: "linear-gradient(180deg,rgba(255,255,255,.01),rgba(255,255,255,0))",
+        }}
+      >
         {messages.map((message) => {
           const mine = message.from_uid === me.id;
           const system = isSystemMessage(message);
@@ -1819,7 +1831,7 @@ function ChatView({
             <div key={message.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
               <div
                 style={{
-                  maxWidth: "78%",
+                  maxWidth: "82%",
                   padding: "12px 14px",
                   borderRadius: mine ? "22px 22px 8px 22px" : "22px 22px 22px 8px",
                   background: support
@@ -1837,12 +1849,12 @@ function ChatView({
                     {mine ? "Ответ саппорта" : "Сообщение саппорта"}
                   </div>
                 )}
-                {message.img ? (
-                  <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block" }} />
-                ) : null}
-                {message.text ? <div style={{ lineHeight: 1.6, marginTop: message.img ? 10 : 0 }}>{message.text}</div> : null}
-                <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
-              </div>
+                  {message.img ? (
+                    <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block" }} />
+                  ) : null}
+                  {message.text ? <div style={{ lineHeight: 1.6, marginTop: message.img ? 10 : 0 }}>{message.text}</div> : null}
+                  <div style={{ fontSize: 11, color: T.text3, marginTop: 6 }}>{formatTime(message.created_at)}</div>
+                </div>
             </div>
           );
         })}
@@ -3067,18 +3079,54 @@ function AdminSheet({
                 )}
                 {inspectedDialogUser && (
                   <div className="panel" style={{ padding: 12, marginTop: 12 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 8 }}>
                       Просмотр: @{getUsername(foundUser)} ↔ @{getUsername(inspectedDialogUser)}
                     </div>
-                    <div className="scroll" style={{ maxHeight: 260, display: "flex", flexDirection: "column", gap: 8 }}>
-                      {dialogMessages.map((message) => (
-                        <div key={message.id} className="panel" style={{ padding: 10 }}>
-                          <div style={{ color: T.text3, fontSize: 11, marginBottom: 6 }}>
-                            {message.from_uid === foundUser.id ? `@${getUsername(foundUser)}` : `@${getUsername(inspectedDialogUser)}`} • {formatTime(message.created_at)}
+                    <div
+                      className="scroll"
+                      style={{
+                        maxHeight: 320,
+                        minHeight: 140,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "flex-end",
+                        gap: 8,
+                        padding: 4,
+                        borderRadius: 18,
+                        background: "rgba(10,8,22,.46)",
+                        border: `1px solid ${T.line}`,
+                      }}
+                    >
+                      {dialogMessages.length === 0 && <div style={{ color: T.text3, padding: 8 }}>Сообщений пока нет.</div>}
+                      {dialogMessages.map((message) => {
+                        const fromOwner = message.from_uid === foundUser.id;
+                        return (
+                          <div key={message.id} style={{ display: "flex", justifyContent: fromOwner ? "flex-end" : "flex-start" }}>
+                            <div
+                              style={{
+                                maxWidth: "88%",
+                                padding: "10px 12px",
+                                borderRadius: fromOwner ? "18px 18px 8px 18px" : "18px 18px 18px 8px",
+                                background: fromOwner
+                                  ? "linear-gradient(135deg,rgba(139,95,255,.30),rgba(89,207,255,.18))"
+                                  : "linear-gradient(180deg,rgba(27,20,51,.82),rgba(12,9,25,.92))",
+                                border: `1px solid ${fromOwner ? "rgba(154,99,255,.24)" : T.line}`,
+                                boxShadow: "0 12px 24px rgba(4,2,12,.18)",
+                              }}
+                            >
+                              <div style={{ color: T.text3, fontSize: 11, marginBottom: 6 }}>
+                                {fromOwner ? `@${getUsername(foundUser)}` : `@${getUsername(inspectedDialogUser)}`} • {formatTime(message.created_at)}
+                              </div>
+                              {message.img ? (
+                                <img src={message.img} alt={message.file_name || "attachment"} style={{ width: "100%", maxWidth: 220, borderRadius: 10, display: "block", marginBottom: message.text ? 8 : 0 }} />
+                              ) : null}
+                              <div style={{ color: T.text2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                                {message.text || (message.img ? "" : "Пустое сообщение")}
+                              </div>
+                            </div>
                           </div>
-                          <div style={{ color: T.text2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{message.text || (message.img ? "[вложение]" : "Пустое сообщение")}</div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <button className="btn-primary" style={{ width: "100%", marginTop: 10 }} disabled={working} onClick={injectAdminMessageIntoDialog}>
                       Отправить в этот чат как администрация
