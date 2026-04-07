@@ -926,14 +926,16 @@ function OfferCard({
         </div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
-          <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{offer.title}</div>
-            <div style={{ fontSize: 12, color: T.text2 }}>
+            <div style={{ fontSize: 12, color: T.text2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               @{getUsername(seller)} • {KIND_LABELS[offer.kind]}
             </div>
           </div>
-          <CurBadge cur={offer.cur} price={offer.price} />
+          <div style={{ flexShrink: 0 }}>
+            <CurBadge cur={offer.cur} price={offer.price} />
+          </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
           <span className="pill" style={{ padding: "6px 10px" }}>
@@ -1525,7 +1527,7 @@ function HomeScreen({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div className="scroll" style={{ flex: 1, padding: "18px 16px 116px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
             <div
               style={{
@@ -1673,20 +1675,15 @@ function ChatsScreen({
 
   return (
     <div className="scroll" style={{ height: "100%", padding: 16, paddingBottom: "calc(118px + env(safe-area-inset-bottom, 0px))", background: getProfileScreenBackground(me) }}>
-      <SectionTitle
-        right={
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="btn-ghost" onClick={onOpenSupportChat}>
-              Чат саппорта
-            </button>
-            <button className="btn-ghost" onClick={onOpenSupport}>
-              Заявка
-            </button>
-          </div>
-        }
-      >
-        Сообщения
-      </SectionTitle>
+      <SectionTitle>Сообщения</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+        <button className="btn-ghost" onClick={onOpenSupportChat}>
+          Чат саппорта
+        </button>
+        <button className="btn-ghost" onClick={onOpenSupport}>
+          Заявка
+        </button>
+      </div>
       {loading && <Spinner />}
       {!loading && conversations.length === 0 && <div style={{ color: T.text3 }}>У тебя пока нет диалогов.</div>}
       {!loading && conversations.length > 0 && (
@@ -3259,18 +3256,18 @@ function TabBar({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: compact ? 4 : 6,
+              gap: compact ? 2 : 6,
               cursor: "pointer",
               position: "relative",
               minWidth: 0,
-              padding: compact ? "2px 0" : undefined,
+              padding: compact ? "1px 0" : undefined,
             }}
           >
             <span
               style={{
-                width: compact ? 38 : 42,
-                height: compact ? 38 : 42,
-                borderRadius: compact ? 14 : 16,
+                width: compact ? 36 : 42,
+                height: compact ? 36 : 42,
+                borderRadius: compact ? 13 : 16,
                 background: active ? "linear-gradient(135deg,#8B5FFF,#5F8DFF 62%,#59CFFF)" : "rgba(255,255,255,.04)",
                 border: active ? "1px solid rgba(255,255,255,.2)" : "1px solid rgba(255,255,255,.06)",
                 display: "grid",
@@ -3280,23 +3277,23 @@ function TabBar({
             >
               <NavIcon name={item.icon} active={active} />
             </span>
-            <span style={{ fontSize: compact ? 10 : 11, fontWeight: 800, color: active ? T.text : T.text3, lineHeight: 1, whiteSpace: "nowrap" }}>{item.label}</span>
+            {!compact && <span style={{ fontSize: 11, fontWeight: 800, color: active ? T.text : T.text3, lineHeight: 1, whiteSpace: "nowrap" }}>{item.label}</span>}
             {item.badge ? (
               <span
                 style={{
                   position: "absolute",
-                  top: compact ? 4 : 8,
-                  right: compact ? "18%" : "22%",
-                  minWidth: 18,
-                  height: 18,
+                  top: compact ? 2 : 8,
+                  right: compact ? "12%" : "22%",
+                  minWidth: compact ? 16 : 18,
+                  height: compact ? 16 : 18,
                   borderRadius: 999,
                   background: item.id === "orders" ? T.blue : T.red,
                   color: "#fff",
-                  fontSize: 10,
+                  fontSize: compact ? 9 : 10,
                   fontWeight: 800,
                   display: "grid",
                   placeItems: "center",
-                  padding: "0 5px",
+                  padding: compact ? "0 4px" : "0 5px",
                 }}
               >
                 {item.badge}
