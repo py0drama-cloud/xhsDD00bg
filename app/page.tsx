@@ -370,6 +370,10 @@ select.inp{
   border:1px solid rgba(255,255,255,.08)
 }
 .hide-scrollbar::-webkit-scrollbar{display:none}
+.portal-appear{animation:portalAppear .34s cubic-bezier(.2,.85,.2,1)}
+.portal-float{animation:portalFloat 4.8s ease-in-out infinite}
+.tap-scale{transition:transform .16s ease,background .16s ease,border-color .16s ease}
+.tap-scale:active{transform:scale(.96)}
 .home-select-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .chat-shortcuts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .chat-shortcuts-grid > *{min-width:0}
@@ -382,6 +386,8 @@ select.inp{
 @media (max-width:420px){
   .home-select-grid,.chat-shortcuts-grid{grid-template-columns:1fr}
 }
+@keyframes portalAppear{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes portalFloat{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(5px) rotate(-3deg)}}
 `;
 
 function shortOrderId(id: string) {
@@ -599,15 +605,16 @@ function BalanceChip({
   return (
     <button
       onClick={onClick}
+      className="tap-scale"
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 10,
+        gap: 8,
         minWidth: 0,
-        border: "1px solid rgba(35,151,255,.22)",
+        border: `1px solid ${isStars ? "rgba(255,255,255,.12)" : "rgba(35,151,255,.22)"}`,
         borderRadius: 999,
-        padding: "9px 16px",
-        background: "linear-gradient(180deg,rgba(16,43,68,.98),rgba(13,34,55,.98))",
+        padding: "7px 12px",
+        background: isStars ? "linear-gradient(180deg,#2B2B2B,#1C1C1C)" : "linear-gradient(180deg,rgba(16,43,68,.98),rgba(13,34,55,.98))",
         color: T.text,
         fontWeight: 900,
         cursor: "pointer",
@@ -615,9 +622,23 @@ function BalanceChip({
         backdropFilter: "blur(18px)",
       }}
     >
-      <span style={{ color: "#fff", fontSize: 22, lineHeight: 1 }}>▽</span>
-      <span style={{ whiteSpace: "nowrap", fontSize: 18, letterSpacing: ".01em" }}>
-        {isStars ? `${formatWorth(value || 0)} TON` : `${formatWorth(value || 0)} R$`}
+      <span
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          background: isStars ? "rgba(255,255,255,.1)" : "rgba(35,151,255,.18)",
+          color: "#fff",
+          fontSize: isStars ? 16 : 13,
+          fontWeight: 1000,
+        }}
+      >
+        {isStars ? "$" : "R$"}
+      </span>
+      <span style={{ whiteSpace: "nowrap", fontSize: 14, letterSpacing: ".01em" }}>
+        {isStars ? `$ ${formatWorth(value || 0)}` : `${formatWorth(value || 0)} Robux`}
       </span>
     </button>
   );
@@ -637,9 +658,10 @@ function RoundIconButton({
       aria-label={label}
       title={label}
       onClick={onClick}
+      className="tap-scale"
       style={{
-        width: 42,
-        height: 42,
+        width: 38,
+        height: 38,
         border: `1px solid ${T.line2}`,
         borderRadius: 999,
         background: "rgba(18,14,35,.72)",
@@ -973,47 +995,48 @@ function OfferCard({
         textAlign: "left",
         background: "linear-gradient(180deg,#202020,#181818)",
         border: "1px solid rgba(255,255,255,.05)",
-        borderRadius: 32,
-        padding: 16,
+        borderRadius: 22,
+        padding: 10,
         overflow: "hidden",
         cursor: "pointer",
         color: T.text,
-        boxShadow: "0 22px 48px rgba(0,0,0,.42)",
+        boxShadow: "0 14px 34px rgba(0,0,0,.36)",
       }}
     >
       <div
         style={{
           width: "100%",
-          aspectRatio: "1.92 / 1",
-          borderRadius: 24,
+          aspectRatio: "2.15 / 1",
+          borderRadius: 16,
           background: cover ? `url(${cover}) center/cover` : getProfileGradient(seller),
           position: "relative",
           overflow: "hidden",
           border: "1px solid rgba(255,255,255,.08)",
-          marginBottom: 14,
+          marginBottom: 10,
         }}
       >
         <div style={{ position: "absolute", inset: 0, background: cover ? "linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.08))" : "radial-gradient(circle at 50% 45%,rgba(255,255,255,.25),transparent 28%)" }} />
       </div>
-      <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1.1, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {offer.title} <span style={{ color: T.text2, fontSize: 17, fontWeight: 900 }}>{offer.type}</span>
+      <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.08, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {offer.title} <span style={{ color: T.text2, fontSize: 13, fontWeight: 900 }}>{offer.type}</span>
       </div>
-      <div style={{ height: 1, background: "rgba(255,255,255,.72)", marginBottom: 12 }} />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <Avatar user={seller} size={48} />
+      <div style={{ height: 1, background: "rgba(255,255,255,.55)", marginBottom: 9 }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+          <Avatar user={seller} size={38} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ color: T.text2, fontSize: 17, fontWeight: 900, lineHeight: 1 }}>Продавец</div>
-            <div style={{ color: T.text, fontSize: 21, fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ color: T.text2, fontSize: 12, fontWeight: 900, lineHeight: 1 }}>Продавец</div>
+            <div style={{ color: T.text, fontSize: 15, fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               @{getUsername(seller)}
             </div>
           </div>
         </div>
         <button
           type="button"
+          className="tap-scale"
           style={{
-            width: 54,
-            height: 54,
+            width: 42,
+            height: 42,
             borderRadius: 999,
             border: "1px solid rgba(255,255,255,.08)",
             background: "#3A3A3A",
@@ -1023,7 +1046,7 @@ function OfferCard({
             flexShrink: 0,
           }}
         >
-          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9h12l-1 10H7L6 9Z" />
             <path d="M9 9a3 3 0 0 1 6 0" />
           </svg>
@@ -1031,18 +1054,18 @@ function OfferCard({
         <div
           style={{
             borderRadius: 999,
-            padding: "15px 24px",
+            padding: "11px 16px",
             background: "linear-gradient(180deg,#289CFF,#178CFA)",
             color: "#fff",
-            fontSize: 22,
+            fontSize: 16,
             fontWeight: 900,
-            minWidth: 132,
+            minWidth: 92,
             textAlign: "center",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,.2)",
             flexShrink: 0,
           }}
         >
-          {offer.price} ▽
+          {offer.price} {offer.cur === "ROBUX" ? "R$" : "$"}
         </div>
       </div>
     </button>
@@ -1583,6 +1606,8 @@ function HomeScreen({
   const [kindFilter, setKindFilter] = useState<OfferKind | "ALL">("ALL");
   const [currencyFilter, setCurrencyFilter] = useState<Currency | "ALL">("ALL");
   const [sort, setSort] = useState<"new" | "sales" | "price_asc" | "price_desc">("new");
+  const [showFilters, setShowFilters] = useState(true);
+  const [compactMode, setCompactMode] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -1629,114 +1654,110 @@ function HomeScreen({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div className="scroll" style={{ flex: 1, padding: "20px 16px 122px", background: "#101010" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+      <div className="scroll" style={{ flex: 1, padding: "14px 12px 108px", background: "#101010" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <button
-            className="btn-ghost"
-            style={{ borderRadius: 999, padding: "10px 16px", background: "#2B2B2B", color: "#fff", fontSize: 18, fontWeight: 900 }}
+            className="btn-ghost tap-scale"
+            style={{ borderRadius: 999, padding: "8px 13px", background: "#2B2B2B", color: "#fff", fontSize: 15, fontWeight: 900 }}
             onClick={() => getTelegramWebApp()?.close()}
           >
             × Закрыть
           </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <RoundIconButton onClick={onOpenMenu} label="Свернуть">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </RoundIconButton>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <RoundIconButton onClick={onOpenMenu} label="Меню">
-              <span style={{ fontSize: 25, lineHeight: 1, marginTop: -7 }}>...</span>
+              <span style={{ fontSize: 22, lineHeight: 1, marginTop: -6 }}>...</span>
             </RoundIconButton>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
           <BalanceChip kind="STARS" value={me.stars} onClick={onOpenWallet} />
           <BalanceChip kind="ROBUX" value={me.robux} onClick={onOpenWallet} />
         </div>
 
-        <div
+        {!compactMode && <div
+          className="portal-appear"
           style={{
             position: "relative",
             overflow: "hidden",
-            minHeight: 128,
-            borderRadius: 30,
-            padding: 22,
-            marginBottom: 24,
+            minHeight: 92,
+            borderRadius: 22,
+            padding: 16,
+            marginBottom: 17,
             background: "radial-gradient(circle at 80% 34%,rgba(170,230,255,.86),transparent 18%),radial-gradient(circle at 62% 60%,rgba(63,142,255,.8),transparent 24%),radial-gradient(circle at 34% 48%,rgba(119,72,255,.85),transparent 32%),linear-gradient(135deg,#171128,#315DCE 58%,#B6EDFF)",
             boxShadow: "0 22px 48px rgba(0,0,0,.38)",
           }}
         >
-          <div style={{ position: "absolute", right: 25, top: 18, width: 116, height: 86, borderRadius: 24, background: "linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,.08))", transform: "rotate(-8deg)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.28)" }} />
-          <div style={{ position: "absolute", right: 126, bottom: 16, width: 54, height: 54, borderRadius: 999, border: "8px solid rgba(255,255,255,.28)", boxShadow: "0 0 28px rgba(255,255,255,.28)" }} />
-          <div className="title" style={{ position: "relative", fontSize: 36, lineHeight: 1, textShadow: "0 2px 14px rgba(0,0,0,.34)" }}>
-            3 collections
+          <div className="portal-float" style={{ position: "absolute", right: 18, top: 13, width: 86, height: 62, borderRadius: 18, background: "linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,.08))", boxShadow: "inset 0 1px 0 rgba(255,255,255,.28)" }} />
+          <div style={{ position: "absolute", right: 105, bottom: 14, width: 40, height: 40, borderRadius: 999, border: "6px solid rgba(255,255,255,.28)", boxShadow: "0 0 22px rgba(255,255,255,.24)" }} />
+          <div className="title" style={{ position: "relative", fontSize: 28, lineHeight: 1, textShadow: "0 2px 14px rgba(0,0,0,.34)" }}>
+            3 коллекции
           </div>
-          <div style={{ position: "relative", display: "inline-flex", marginTop: 7, padding: "5px 12px", borderRadius: 999, background: "rgba(88,55,160,.58)", color: "#fff", fontSize: 24, lineHeight: 1, fontWeight: 900 }}>
-            Commission 0%
+          <div style={{ position: "relative", display: "inline-flex", marginTop: 6, padding: "4px 9px", borderRadius: 999, background: "rgba(88,55,160,.58)", color: "#fff", fontSize: 17, lineHeight: 1, fontWeight: 900 }}>
+            Комиссия 0%
           </div>
+        </div>}
+
+        <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 14 }}>
+          <button className="tap-scale" onClick={() => setKindFilter("ALL")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "ALL" ? "#fff" : "#3D3D3D", fontSize: 28, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
+            Все товары
+          </button>
+          <button className="tap-scale" onClick={() => setKindFilter("PRODUCT")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "PRODUCT" ? "#fff" : "#3D3D3D", fontSize: 25, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
+            Коллекции
+          </button>
         </div>
 
-        <div style={{ display: "flex", alignItems: "baseline", gap: 18, marginBottom: 24 }}>
-          <button onClick={() => setKindFilter("ALL")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "ALL" ? "#fff" : "#3D3D3D", fontSize: 38, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
-            All items
-          </button>
-          <button onClick={() => setKindFilter("PRODUCT")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "PRODUCT" ? "#fff" : "#3D3D3D", fontSize: 34, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
-            Collections
-          </button>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 58px 58px 58px", gap: 10, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 46px 46px 46px", gap: 8, marginBottom: 10 }}>
           <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", left: 17, top: "50%", transform: "translateY(-50%)", color: "#6B6B6B", fontSize: 33, lineHeight: 1 }}>⌕</span>
+            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#6B6B6B", fontSize: 25, lineHeight: 1 }}>⌕</span>
             <input
               className="inp"
-              style={{ height: 58, paddingLeft: 58, fontSize: 21, fontWeight: 900, borderRadius: 999, background: "#1A1A1A" }}
+              style={{ height: 46, paddingLeft: 43, fontSize: 15, fontWeight: 900, borderRadius: 999, background: "#1A1A1A" }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Quick find"
+              placeholder="Быстрый поиск"
             />
           </div>
-          <button className="btn-ghost" style={{ width: 58, height: 58, borderRadius: 999, padding: 0, background: "#3A3A3A" }} onClick={() => setSort(sort === "sales" ? "new" : "sales")}>
-            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round">
+          <button className="btn-ghost tap-scale" title="Популярное" style={{ width: 46, height: 46, borderRadius: 999, padding: 0, background: sort === "sales" ? "#2F78B9" : "#3A3A3A" }} onClick={() => setSort(sort === "sales" ? "new" : "sales")}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D8D8D8" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 14c2 0 2-8 4-8s2 12 4 12 2-8 4-8 2 4 4 4" />
             </svg>
           </button>
-          <button className="btn-ghost" style={{ width: 58, height: 58, borderRadius: 999, padding: 0, background: "#3A3A3A" }} onClick={onOpenMenu}>
-            <svg width="29" height="29" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" strokeWidth="2.8" strokeLinecap="round">
+          <button className="btn-ghost tap-scale" title="Фильтры" style={{ width: 46, height: 46, borderRadius: 999, padding: 0, background: showFilters ? "#2F2F2F" : "#1E1E1E" }} onClick={() => setShowFilters((value) => !value)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D8D8D8" strokeWidth="2.8" strokeLinecap="round">
               <path d="M5 7h14M5 12h14M5 17h14" />
             </svg>
           </button>
-          <button className="btn-ghost" style={{ width: 58, height: 58, borderRadius: 999, padding: 0, background: "#fff" }} onClick={onOpenMenu}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m6 14 6-6 6 6" />
+          <button className="btn-ghost tap-scale" title="Свернуть баннер" style={{ width: 46, height: 46, borderRadius: 999, padding: 0, background: "#fff" }} onClick={() => setCompactMode((value) => !value)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d={compactMode ? "m6 10 6 6 6-6" : "m6 14 6-6 6 6"} />
             </svg>
           </button>
         </div>
 
-        <div className="panel" style={{ display: "grid", gridTemplateColumns: "1fr 110px", alignItems: "center", minHeight: 70, borderRadius: 24, padding: "12px 16px", marginBottom: 14, background: "#1A1A1A" }}>
+        {showFilters && <div className="panel portal-appear" style={{ display: "grid", gridTemplateColumns: "1fr 88px", alignItems: "center", minHeight: 54, borderRadius: 18, padding: "9px 12px", marginBottom: 10, background: "#1A1A1A" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-            <span style={{ width: 28, height: 28, borderRadius: 999, background: "#fff", display: "block", boxShadow: "0 0 0 3px rgba(255,255,255,.18)" }} />
-            <span style={{ height: 8, flex: 1, borderRadius: 999, background: "#8A8A8A", display: "block" }} />
+            <span style={{ width: 21, height: 21, borderRadius: 999, background: "#fff", display: "block", boxShadow: "0 0 0 3px rgba(255,255,255,.16)" }} />
+            <span style={{ height: 6, flex: 1, borderRadius: 999, background: "#8A8A8A", display: "block" }} />
           </div>
-          <div style={{ borderLeft: "2px solid #555", paddingLeft: 22, textAlign: "right" }}>
-            <div style={{ fontSize: 22, fontWeight: 900 }}>0 TON</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#686868" }}>{filtered.length} items</div>
+          <div style={{ borderLeft: "1px solid #555", paddingLeft: 14, textAlign: "right" }}>
+            <div style={{ fontSize: 16, fontWeight: 900 }}>$ 0</div>
+            <div style={{ fontSize: 14, fontWeight: 900, color: "#686868" }}>{filtered.length} шт.</div>
           </div>
-        </div>
+        </div>}
 
-        <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: 9, overflowX: "auto", marginBottom: 26, paddingBottom: 2 }}>
-          <button className="btn-ghost" style={{ width: 52, height: 52, borderRadius: 999, padding: 0, background: "#222" }}>
-            <svg width="25" height="25" viewBox="0 0 24 24" fill="#A7A7A7"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" /></svg>
+        {showFilters && <div className="hide-scrollbar portal-appear" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", marginBottom: 16, paddingBottom: 2 }}>
+          <button className="btn-ghost tap-scale" style={{ width: 42, height: 42, borderRadius: 999, padding: 0, background: "#222" }} onClick={() => setCurrencyFilter("ALL")}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#A7A7A7"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" /></svg>
           </button>
-          <button className="btn-ghost" style={{ width: 52, height: 52, borderRadius: 999, padding: 0, background: "#222" }} onClick={() => setSort(sort === "price_asc" ? "price_desc" : "price_asc")}>
-            <span style={{ color: "#A7A7A7", fontSize: 31, fontWeight: 900, lineHeight: 1 }}>↕</span>
+          <button className="btn-ghost tap-scale" style={{ width: 42, height: 42, borderRadius: 999, padding: 0, background: "#222" }} onClick={() => setSort(sort === "price_asc" ? "price_desc" : "price_asc")}>
+            <span style={{ color: "#A7A7A7", fontSize: 24, fontWeight: 900, lineHeight: 1 }}>↕</span>
           </button>
-          <div style={{ width: 2, height: 38, background: "#444", margin: "0 8px" }} />
-          <button className="pill active" style={{ height: 52, padding: "0 24px", fontSize: 22 }}>Collection⌄</button>
-          <button className="pill" style={{ height: 52, padding: "0 24px", fontSize: 22 }} onClick={() => setCurrencyFilter(currencyFilter === "ROBUX" ? "ALL" : "ROBUX")}>Model⌄</button>
-          <div style={{ color: "#777", fontSize: 36, fontWeight: 900 }}>›</div>
-        </div>
+          <div style={{ width: 1, height: 30, background: "#444", margin: "0 5px" }} />
+          <button className={`pill${currencyFilter === "STARS" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setCurrencyFilter(currencyFilter === "STARS" ? "ALL" : "STARS")}>Доллары</button>
+          <button className={`pill${currencyFilter === "ROBUX" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setCurrencyFilter(currencyFilter === "ROBUX" ? "ALL" : "ROBUX")}>Robux</button>
+          <button className={`pill${kindFilter === "SERVICE" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setKindFilter(kindFilter === "SERVICE" ? "ALL" : "SERVICE")}>Услуги</button>
+        </div>}
 
         {loading && (
           <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
@@ -1744,10 +1765,10 @@ function HomeScreen({
           </div>
         )}
 
-        {!loading && filtered.length === 0 && <div style={{ color: T.text3, textAlign: "center", padding: "60px 0" }}>Nothing found.</div>}
+        {!loading && filtered.length === 0 && <div style={{ color: T.text3, textAlign: "center", padding: "60px 0" }}>Ничего не найдено.</div>}
 
         {!loading && filtered.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {filtered.map((offer) => (
               <OfferCard key={offer.id} offer={offer} onOpen={onOpenOffer} />
             ))}
@@ -3388,7 +3409,7 @@ function WalletSheet({
         <div className="panel" style={{ padding: 14, background: "linear-gradient(135deg,rgba(154,99,255,.24),rgba(105,200,255,.12))" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <span style={{ color: T.text2, fontSize: 12, fontWeight: 800 }}>Основной</span>
-            <span className="blue-badge">Stars/USDT</span>
+            <span className="blue-badge">$ баланс</span>
           </div>
           <div className="title" style={{ fontSize: 26, marginTop: 12 }}>{formatWorth(me.stars)}</div>
           <div style={{ color: T.text3, fontSize: 12, marginTop: 2 }}>внутренняя валюта</div>
@@ -3404,16 +3425,16 @@ function WalletSheet({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-        <button className="btn-primary" onClick={() => action("Пополнение Stars/USDT")}>Пополнить</button>
+        <button className="btn-primary" onClick={() => action("Пополнение долларового баланса")}>Пополнить</button>
         <button className="btn-ghost" onClick={() => action("Вывод средств")}>Вывести</button>
       </div>
 
       <div className="panel" style={{ padding: 14, marginBottom: 12 }}>
         <div style={{ fontWeight: 900, marginBottom: 10 }}>Подготовлено для платежей</div>
         <div style={{ display: "grid", gap: 8, color: T.text2, fontSize: 13, lineHeight: 1.45 }}>
-          <div>• покупка товаров за Stars/USDT баланс;</div>
+          <div>• покупка товаров за долларовый баланс;</div>
           <div>• покупка товаров за Robux баланс;</div>
-          <div>• пополнение основного баланса Telegram Stars или USDT;</div>
+          <div>• пополнение основного баланса через платежный провайдер;</div>
           <div>• пополнение/вывод Robux после подключения провайдера.</div>
         </div>
       </div>
@@ -3439,20 +3460,20 @@ function MarketMenuSheet({
   const openLink = (label: string) => showToast(`${label}: ссылку можно будет заменить на реальный канал.`);
   return (
     <Sheet onClose={onClose} maxWidth={540}>
-      <SectionTitle>Menu</SectionTitle>
-      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Language</div>
+      <SectionTitle>Меню</SectionTitle>
+      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Язык</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
         <button className="pill active">RU</button>
         <button className="pill">EN</button>
       </div>
 
-      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Links</div>
+      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Ссылки</div>
       <div className="panel" style={{ overflow: "hidden", marginBottom: 16 }}>
         {[
-          ["Portals Web", "🌐"],
-          ["Gift Account", "◇"],
-          ["Portals Games", "🎮"],
-          ["Portals Channel", "↗"],
+          ["Сайт проекта", "W"],
+          ["Аккаунт подарков", "G"],
+          ["Игры", "P"],
+          ["Канал", "C"],
         ].map(([label, icon], index) => (
           <button
             key={label}
@@ -3472,7 +3493,7 @@ function MarketMenuSheet({
             }}
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 10, fontWeight: 800 }}>
-              <span>{icon}</span>
+              <span style={{ width: 24, height: 24, borderRadius: 999, display: "grid", placeItems: "center", background: "rgba(35,151,255,.16)", color: T.blue, fontSize: 11 }}>{icon}</span>
               {label}
             </span>
             <span style={{ color: T.text3 }}>›</span>
@@ -3481,8 +3502,8 @@ function MarketMenuSheet({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <button className="btn-ghost" onClick={() => openLink("Privacy")}>Privacy</button>
-        <button className="btn-primary" onClick={() => openLink("Contact the Team")}>Contact the Team</button>
+        <button className="btn-ghost" onClick={() => openLink("Политика")}>Политика</button>
+        <button className="btn-primary" onClick={() => openLink("Связь с командой")}>Связь</button>
       </div>
     </Sheet>
   );
@@ -3516,10 +3537,10 @@ function TabBar({
   };
 
   const items: Array<{ id: string; label: string; icon: "home" | "chat" | "plus" | "orders" | "profile" | "admin"; badge?: number; action?: () => void }> = [
-    { id: "home", label: "Games", icon: "home" as const },
-    { id: "chats", label: "Store", icon: "chat" as const, badge: unread },
-    { id: "create", label: "My gifts", icon: "plus" as const, action: onCreate },
-    { id: "orders", label: "Season", icon: "orders" as const, badge: pendingOrders },
+    { id: "home", label: "Маркет", icon: "home" as const },
+    { id: "chats", label: "Чаты", icon: "chat" as const, badge: unread },
+    { id: "create", label: "Создать", icon: "plus" as const, action: onCreate },
+    { id: "orders", label: "Заказы", icon: "orders" as const, badge: pendingOrders },
     { id: "profile", label: "Профиль", icon: "profile" as const },
   ];
   if (isAdmin) items.push({ id: "admin", label: "Админ", icon: "admin" as const });
