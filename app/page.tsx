@@ -379,6 +379,10 @@ select.inp{
 .range-clean{appearance:none;width:100%;height:6px;border-radius:999px;background:#8A8A8A;outline:none}
 .range-clean::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:999px;background:#fff;border:0;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.35)}
 .range-clean::-moz-range-thumb{width:22px;height:22px;border-radius:999px;background:#fff;border:0;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.35)}
+.pill.active{animation:jelly .46s cubic-bezier(.2,1.2,.2,1)}
+.create-form .inp{border-radius:18px}
+.create-form textarea.inp{border-radius:28px}
+.create-form select.inp{border-radius:18px}
 .home-select-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .chat-shortcuts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .chat-shortcuts-grid > *{min-width:0}
@@ -393,6 +397,7 @@ select.inp{
 }
 @keyframes portalAppear{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes portalFloat{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(5px) rotate(-3deg)}}
+@keyframes jelly{0%{transform:scale(1)}35%{transform:scale(1.08,.92)}70%{transform:scale(.97,1.04)}100%{transform:scale(1)}}
 `;
 
 function shortOrderId(id: string) {
@@ -1051,7 +1056,7 @@ function OfferCard({
           style={{
             width: 42,
             height: 42,
-            borderRadius: 16,
+            borderRadius: 14,
             border: "1px solid rgba(255,255,255,.08)",
             background: "#3A3A3A",
             color: "#fff",
@@ -1327,7 +1332,7 @@ function CreateOfferSheet({
   return (
     <Sheet onClose={onClose}>
       <SectionTitle>Новое предложение</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="create-form" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {!quizPassed ? (
           <>
             <div className="panel" style={{ padding: 14 }}>
@@ -1406,9 +1411,7 @@ function CreateOfferSheet({
                 <option value="STARS">Stars</option>
                 <option value="ROBUX">Robux</option>
               </select>
-              <div className="panel" style={{ padding: 12, color: T.text2, fontSize: 12 }}>
-                Минимальная цена: {MIN_OFFER_PRICE_STARS} Stars
-              </div>
+              <input className="inp" disabled value={`Минимальная цена: ${MIN_OFFER_PRICE_STARS} Stars`} />
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <input className="inp" style={{ flex: 1, minWidth: 220 }} value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Ссылка или data-url баннера" />
@@ -1608,11 +1611,13 @@ function HomeScreen({
   onOpenOffer,
   onOpenMenu,
   onOpenWallet,
+  onOpenCart,
 }: {
   me: User;
   onOpenOffer: (offer: Offer) => void;
   onOpenMenu: () => void;
   onOpenWallet: () => void;
+  onOpenCart: () => void;
 }) {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1701,7 +1706,7 @@ function HomeScreen({
 
         {!compactMode && <button
           className="portal-appear"
-          onClick={() => openTelegram("@RoWorth")}
+          onClick={() => openTelegram("@RoWorthNews")}
           style={{
             position: "relative",
             overflow: "hidden",
@@ -1725,7 +1730,7 @@ function HomeScreen({
             Подпишись на новости
           </div>
           <div style={{ position: "relative", display: "inline-flex", marginTop: 6, padding: "4px 9px", borderRadius: 999, background: "rgba(88,55,160,.58)", color: "#fff", fontSize: 17, lineHeight: 1, fontWeight: 900 }}>
-            @RoWorth
+            @RoWorthNews
           </div>
         </button>}
 
@@ -1733,7 +1738,7 @@ function HomeScreen({
           <button className="tap-scale" onClick={() => setKindFilter("ALL")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "ALL" ? "#fff" : "#3D3D3D", fontSize: 28, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
             Все товары
           </button>
-          <button className="tap-scale" onClick={onOpenWallet} style={{ border: "none", background: "transparent", padding: 0, color: "#3D3D3D", fontSize: 25, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
+          <button className="tap-scale" onClick={onOpenCart} style={{ border: "none", background: "transparent", padding: 0, color: "#3D3D3D", fontSize: 25, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
             Корзина
           </button>
         </div>
@@ -1761,7 +1766,7 @@ function HomeScreen({
           </button>
         </div>
 
-        {showFilters && <div className="panel portal-appear" style={{ display: "grid", gridTemplateColumns: "1fr 88px", alignItems: "center", minHeight: 54, borderRadius: 18, padding: "9px 12px", marginBottom: 10, background: "#1A1A1A" }}>
+        {showFilters && <div className="panel portal-appear" style={{ minHeight: 54, borderRadius: 18, padding: "16px 14px", marginBottom: 10, background: "#1A1A1A" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
             <input
               className="range-clean"
@@ -1773,23 +1778,22 @@ function HomeScreen({
               aria-label="Фильтр по цене"
             />
           </div>
-          <div style={{ borderLeft: "1px solid #555", paddingLeft: 14, textAlign: "right" }}>
-            <div style={{ fontSize: 16, fontWeight: 900 }}>{priceLimit > 0 ? `$ ${priceLimit}` : "Любая"}</div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: "#686868" }}>{filtered.length} шт.</div>
-          </div>
         </div>}
 
         {showFilters && <div className="hide-scrollbar portal-appear" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", marginBottom: 16, paddingBottom: 2 }}>
           <button className="btn-ghost tap-scale" style={{ width: 42, height: 42, borderRadius: 999, padding: 0, background: "#222" }} onClick={() => setCurrencyFilter("ALL")}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#A7A7A7"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" /></svg>
           </button>
-          <button className="btn-ghost tap-scale" style={{ width: 42, height: 42, borderRadius: 999, padding: 0, background: "#222" }} onClick={() => setSort(sort === "price_asc" ? "price_desc" : "price_asc")}>
-            <span style={{ color: "#A7A7A7", fontSize: 24, fontWeight: 900, lineHeight: 1 }}>↕</span>
-          </button>
           <div style={{ width: 1, height: 30, background: "#444", margin: "0 5px" }} />
+          <button className={`pill${kindFilter === "ALL" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setKindFilter("ALL")}>Все</button>
+          <button className={`pill${kindFilter === "PRODUCT" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setKindFilter(kindFilter === "PRODUCT" ? "ALL" : "PRODUCT")}>Товары</button>
+          <button className={`pill${kindFilter === "SERVICE" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setKindFilter(kindFilter === "SERVICE" ? "ALL" : "SERVICE")}>Услуги</button>
+          <button className={`pill${kindFilter === "COURSE" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setKindFilter(kindFilter === "COURSE" ? "ALL" : "COURSE")}>Курсы</button>
           <button className={`pill${currencyFilter === "STARS" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setCurrencyFilter(currencyFilter === "STARS" ? "ALL" : "STARS")}>Доллары</button>
           <button className={`pill${currencyFilter === "ROBUX" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setCurrencyFilter(currencyFilter === "ROBUX" ? "ALL" : "ROBUX")}>Robux</button>
-          <button className={`pill${kindFilter === "SERVICE" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setKindFilter(kindFilter === "SERVICE" ? "ALL" : "SERVICE")}>Услуги</button>
+          <button className={`pill${sort === "sales" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setSort(sort === "sales" ? "new" : "sales")}>Популярные</button>
+          <button className={`pill${sort === "price_asc" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setSort(sort === "price_asc" ? "new" : "price_asc")}>Дешевле</button>
+          <button className={`pill${sort === "price_desc" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setSort(sort === "price_desc" ? "new" : "price_desc")}>Дороже</button>
         </div>}
 
         {loading && (
@@ -2583,21 +2587,7 @@ function ProfileScreen({
               Купить
             </button>
           </div>
-        ) : (
-          <div className="panel" style={{ padding: 14, color: T.text2 }}>
-            Premium уже активен. Баннер, тема профиля и GIF-аватар доступны в редакторе профиля.
-          </div>
-        )}
-
-        <div className="panel" style={{ padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>Пополнение баланса</div>
-            <div style={{ color: T.text2, fontSize: 13 }}>Пока это временная заглушка. Позже подключим нормальную механику оплаты.</div>
-          </div>
-          <button className="btn-ghost" onClick={() => showToast("Пополнение пока в разработке. Заглушка подключена.", "ok")}>
-            Скоро
-          </button>
-        </div>
+        ) : null}
       </div>
 
       <SectionTitle right={<span style={{ color: T.text3, fontSize: 12 }}>{offers.length}/{getOfferSlotLimit(me)}</span>}>Мои предложения</SectionTitle>
@@ -3480,21 +3470,22 @@ function WalletSheet({
       </div>
 
       <div className="panel" style={{ padding: 14, marginBottom: 12 }}>
-        <div style={{ fontWeight: 900, marginBottom: 10 }}>Подготовлено для платежей</div>
-        <div style={{ display: "grid", gap: 8, color: T.text2, fontSize: 13, lineHeight: 1.45 }}>
-          <div>• покупка товаров за долларовый баланс;</div>
-          <div>• покупка товаров за Robux баланс;</div>
-          <div>• пополнение основного баланса через платежный провайдер;</div>
-          <div>• пополнение/вывод Robux после подключения провайдера.</div>
-        </div>
-      </div>
-
-      <div className="panel" style={{ padding: 14 }}>
         <div style={{ fontWeight: 900, marginBottom: 12 }}>История транзакций</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: T.text2, fontSize: 13 }}>
           <span>Бонус</span>
           <span style={{ color: T.gold2, fontWeight: 900 }}>+1 ✦</span>
         </div>
+      </div>
+    </Sheet>
+  );
+}
+
+function CartSheet({ onClose }: { onClose: () => void }) {
+  return (
+    <Sheet onClose={onClose} maxWidth={540}>
+      <SectionTitle>Корзина</SectionTitle>
+      <div className="panel" style={{ padding: 16, color: T.text2, lineHeight: 1.6 }}>
+        Корзина пока пустая. Когда добавим полноценное оформление заказа, выбранные товары будут появляться здесь.
       </div>
     </Sheet>
   );
@@ -3699,6 +3690,7 @@ export default function App() {
   const [showSupport, setShowSupport] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showCart, setShowCart] = useState(false);
   const [autoContent, setAutoContent] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "ok" | "err" } | null>(null);
   const [unread, setUnread] = useState(0);
@@ -4158,6 +4150,7 @@ export default function App() {
             onOpenOffer={setSelectedOffer}
             onOpenMenu={() => setShowMenu(true)}
             onOpenWallet={() => setShowWallet(true)}
+            onOpenCart={() => setShowCart(true)}
           />
         )}
         {!chatUser && tab === "chats" && <ChatsScreen me={me} onOpenChat={openChat} onOpenSupportChat={async () => {
@@ -4189,6 +4182,7 @@ export default function App() {
 
       {showWallet && <WalletSheet me={me} onClose={() => setShowWallet(false)} showToast={showToast} />}
       {showMenu && <MarketMenuSheet onClose={() => setShowMenu(false)} showToast={showToast} />}
+      {showCart && <CartSheet onClose={() => setShowCart(false)} />}
 
       {selectedOffer && (
         <OfferSheet
