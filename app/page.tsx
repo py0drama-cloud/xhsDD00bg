@@ -374,6 +374,11 @@ select.inp{
 .portal-float{animation:portalFloat 4.8s ease-in-out infinite}
 .tap-scale{transition:transform .16s ease,background .16s ease,border-color .16s ease}
 .tap-scale:active{transform:scale(.96)}
+.portal-card{animation:portalAppear .32s cubic-bezier(.2,.85,.2,1);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.portal-card:active{transform:scale(.985)}
+.range-clean{appearance:none;width:100%;height:6px;border-radius:999px;background:#8A8A8A;outline:none}
+.range-clean::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:999px;background:#fff;border:0;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.35)}
+.range-clean::-moz-range-thumb{width:22px;height:22px;border-radius:999px;background:#fff;border:0;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.35)}
 .home-select-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .chat-shortcuts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .chat-shortcuts-grid > *{min-width:0}
@@ -989,6 +994,7 @@ function OfferCard({
   return (
     <button
       onClick={() => onOpen(offer)}
+      className="portal-card tap-scale"
       style={{
         display: "block",
         width: "100%",
@@ -1608,6 +1614,7 @@ function HomeScreen({
   const [sort, setSort] = useState<"new" | "sales" | "price_asc" | "price_desc">("new");
   const [showFilters, setShowFilters] = useState(true);
   const [compactMode, setCompactMode] = useState(false);
+  const [priceLimit, setPriceLimit] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -1644,13 +1651,22 @@ function HomeScreen({
       result = result.filter((offer) => offer.cur === currencyFilter);
     }
 
+    if (priceLimit > 0) {
+      result = result.filter((offer) => offer.price <= priceLimit);
+    }
+
     if (sort === "sales") result.sort((a, b) => (b.sales || 0) - (a.sales || 0));
     if (sort === "price_asc") result.sort((a, b) => a.price - b.price);
     if (sort === "price_desc") result.sort((a, b) => b.price - a.price);
     if (sort === "new") result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return result;
-  }, [currencyFilter, kindFilter, offers, search, sort]);
+  }, [currencyFilter, kindFilter, offers, priceLimit, search, sort]);
+
+  const maxOfferPrice = useMemo(() => Math.max(0, ...offers.map((offer) => Number(offer.price || 0))), [offers]);
+  const openTelegram = (handle: string) => {
+    window.open(`https://t.me/${handle.replace(/^@/, "")}`, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -1675,39 +1691,46 @@ function HomeScreen({
           <BalanceChip kind="ROBUX" value={me.robux} onClick={onOpenWallet} />
         </div>
 
-        {!compactMode && <div
+        {!compactMode && <button
           className="portal-appear"
+          onClick={() => openTelegram("@RoWorth")}
           style={{
             position: "relative",
             overflow: "hidden",
+            display: "block",
+            width: "100%",
+            textAlign: "left",
+            border: "1px solid rgba(255,255,255,.08)",
             minHeight: 92,
             borderRadius: 22,
             padding: 16,
             marginBottom: 17,
             background: "radial-gradient(circle at 80% 34%,rgba(170,230,255,.86),transparent 18%),radial-gradient(circle at 62% 60%,rgba(63,142,255,.8),transparent 24%),radial-gradient(circle at 34% 48%,rgba(119,72,255,.85),transparent 32%),linear-gradient(135deg,#171128,#315DCE 58%,#B6EDFF)",
             boxShadow: "0 22px 48px rgba(0,0,0,.38)",
+            cursor: "pointer",
+            color: "#fff",
           }}
         >
           <div className="portal-float" style={{ position: "absolute", right: 18, top: 13, width: 86, height: 62, borderRadius: 18, background: "linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,.08))", boxShadow: "inset 0 1px 0 rgba(255,255,255,.28)" }} />
           <div style={{ position: "absolute", right: 105, bottom: 14, width: 40, height: 40, borderRadius: 999, border: "6px solid rgba(255,255,255,.28)", boxShadow: "0 0 22px rgba(255,255,255,.24)" }} />
           <div className="title" style={{ position: "relative", fontSize: 28, lineHeight: 1, textShadow: "0 2px 14px rgba(0,0,0,.34)" }}>
-            3 коллекции
+            Подпишись на новости
           </div>
           <div style={{ position: "relative", display: "inline-flex", marginTop: 6, padding: "4px 9px", borderRadius: 999, background: "rgba(88,55,160,.58)", color: "#fff", fontSize: 17, lineHeight: 1, fontWeight: 900 }}>
-            Комиссия 0%
+            @RoWorth
           </div>
-        </div>}
+        </button>}
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 14 }}>
           <button className="tap-scale" onClick={() => setKindFilter("ALL")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "ALL" ? "#fff" : "#3D3D3D", fontSize: 28, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
             Все товары
           </button>
-          <button className="tap-scale" onClick={() => setKindFilter("PRODUCT")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "PRODUCT" ? "#fff" : "#3D3D3D", fontSize: 25, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
-            Коллекции
+          <button className="tap-scale" onClick={onOpenWallet} style={{ border: "none", background: "transparent", padding: 0, color: "#3D3D3D", fontSize: 25, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
+            Корзина
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 46px 46px 46px", gap: 8, marginBottom: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 46px 46px", gap: 8, marginBottom: 10 }}>
           <div style={{ position: "relative" }}>
             <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#6B6B6B", fontSize: 25, lineHeight: 1 }}>⌕</span>
             <input
@@ -1718,11 +1741,6 @@ function HomeScreen({
               placeholder="Быстрый поиск"
             />
           </div>
-          <button className="btn-ghost tap-scale" title="Популярное" style={{ width: 46, height: 46, borderRadius: 999, padding: 0, background: sort === "sales" ? "#2F78B9" : "#3A3A3A" }} onClick={() => setSort(sort === "sales" ? "new" : "sales")}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D8D8D8" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 14c2 0 2-8 4-8s2 12 4 12 2-8 4-8 2 4 4 4" />
-            </svg>
-          </button>
           <button className="btn-ghost tap-scale" title="Фильтры" style={{ width: 46, height: 46, borderRadius: 999, padding: 0, background: showFilters ? "#2F2F2F" : "#1E1E1E" }} onClick={() => setShowFilters((value) => !value)}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D8D8D8" strokeWidth="2.8" strokeLinecap="round">
               <path d="M5 7h14M5 12h14M5 17h14" />
@@ -1737,11 +1755,18 @@ function HomeScreen({
 
         {showFilters && <div className="panel portal-appear" style={{ display: "grid", gridTemplateColumns: "1fr 88px", alignItems: "center", minHeight: 54, borderRadius: 18, padding: "9px 12px", marginBottom: 10, background: "#1A1A1A" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-            <span style={{ width: 21, height: 21, borderRadius: 999, background: "#fff", display: "block", boxShadow: "0 0 0 3px rgba(255,255,255,.16)" }} />
-            <span style={{ height: 6, flex: 1, borderRadius: 999, background: "#8A8A8A", display: "block" }} />
+            <input
+              className="range-clean"
+              min={0}
+              max={Math.max(1, maxOfferPrice)}
+              step={1}
+              value={priceLimit}
+              onChange={(event) => setPriceLimit(Number(event.target.value))}
+              aria-label="Фильтр по цене"
+            />
           </div>
           <div style={{ borderLeft: "1px solid #555", paddingLeft: 14, textAlign: "right" }}>
-            <div style={{ fontSize: 16, fontWeight: 900 }}>$ 0</div>
+            <div style={{ fontSize: 16, fontWeight: 900 }}>{priceLimit > 0 ? `$ ${priceLimit}` : "Любая"}</div>
             <div style={{ fontSize: 14, fontWeight: 900, color: "#686868" }}>{filtered.length} шт.</div>
           </div>
         </div>}
@@ -3457,27 +3482,31 @@ function MarketMenuSheet({
   onClose: () => void;
   showToast: (message: string, type?: "ok" | "err") => void;
 }) {
-  const openLink = (label: string) => showToast(`${label}: ссылку можно будет заменить на реальный канал.`);
+  const openTelegram = (handle: string) => {
+    window.open(`https://t.me/${handle.replace(/^@/, "")}`, "_blank", "noopener,noreferrer");
+  };
+  const showRules = () => showToast("Правила: безопасные сделки, без скама, спорные заказы через поддержку.");
   return (
     <Sheet onClose={onClose} maxWidth={540}>
-      <SectionTitle>Меню</SectionTitle>
+      <SectionTitle>Настройки</SectionTitle>
       <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Язык</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-        <button className="pill active">RU</button>
-        <button className="pill">EN</button>
+        <button className="pill active tap-scale">RU</button>
+        <button className="pill tap-scale">EN</button>
       </div>
 
-      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Ссылки</div>
+      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Каналы и сообщество</div>
       <div className="panel" style={{ overflow: "hidden", marginBottom: 16 }}>
         {[
-          ["Сайт проекта", "W"],
-          ["Аккаунт подарков", "G"],
-          ["Игры", "P"],
-          ["Канал", "C"],
-        ].map(([label, icon], index) => (
+          ["@Roblox24h", "24"],
+          ["@Roblox_Developers", "RD"],
+          ["@RoWorthNews", "RN"],
+          ["@RobloxDevelopersRU", "RU"],
+        ].map(([handle, icon], index) => (
           <button
-            key={label}
-            onClick={() => openLink(label)}
+            key={handle}
+            className="tap-scale"
+            onClick={() => openTelegram(handle)}
             style={{
               width: "100%",
               display: "flex",
@@ -3494,7 +3523,7 @@ function MarketMenuSheet({
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 10, fontWeight: 800 }}>
               <span style={{ width: 24, height: 24, borderRadius: 999, display: "grid", placeItems: "center", background: "rgba(35,151,255,.16)", color: T.blue, fontSize: 11 }}>{icon}</span>
-              {label}
+              {handle}
             </span>
             <span style={{ color: T.text3 }}>›</span>
           </button>
@@ -3502,8 +3531,8 @@ function MarketMenuSheet({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <button className="btn-ghost" onClick={() => openLink("Политика")}>Политика</button>
-        <button className="btn-primary" onClick={() => openLink("Связь с командой")}>Связь</button>
+        <button className="btn-ghost tap-scale" onClick={showRules}>Правила</button>
+        <button className="btn-primary tap-scale" onClick={() => openTelegram("@RoWorth")}>Поддержка</button>
       </div>
     </Sheet>
   );
