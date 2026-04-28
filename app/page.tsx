@@ -399,6 +399,14 @@ function shortOrderId(id: string) {
   return id.slice(-6).toUpperCase();
 }
 
+function compactEntityId(createdAt?: string | null, id = "") {
+  const start = Date.UTC(2026, 0, 1);
+  const time = createdAt ? new Date(createdAt).getTime() : Date.now();
+  const days = Number.isFinite(time) ? Math.max(1, Math.floor((time - start) / 86_400_000) + 1) : 1;
+  const tail = id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 100;
+  return `${days}${String(tail).padStart(2, "0")}`;
+}
+
 function formatPrice(price: number, cur: string) {
   return `${price} ${cur === "STARS" ? "Stars" : cur === "ROBUX" ? "Robux" : cur}`;
 }
@@ -571,12 +579,12 @@ function CurBadge({ cur, price }: { cur: Currency; price?: number }) {
         alignItems: "center",
         gap: 8,
         padding: "8px 12px",
-        borderRadius: 999,
         background: "linear-gradient(135deg,rgba(139,95,255,.94),rgba(90,158,255,.84))",
         color: "#fff",
         fontWeight: 800,
         boxShadow: "0 14px 26px rgba(91,92,255,.26)",
         whiteSpace: "nowrap",
+        borderRadius: 16,
       }}
     >
       <span
@@ -758,14 +766,14 @@ function Sheet({
           position: "relative",
           width: "100%",
           maxWidth,
-          maxHeight: "min(92dvh, calc(100dvh - 12px))",
+          maxHeight: "calc(100dvh - 10px)",
           background: "linear-gradient(180deg,rgba(17,12,35,.92),rgba(8,6,18,.98))",
           borderTopLeftRadius: 30,
           borderTopRightRadius: 30,
           border: `1px solid ${T.line2}`,
           borderBottom: "none",
           padding: 18,
-          paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
+          paddingBottom: "calc(34px + env(safe-area-inset-bottom, 0px))",
           overscrollBehavior: "contain",
           boxShadow: "0 -18px 60px rgba(2,1,8,.65)",
           backdropFilter: "blur(26px)",
@@ -1043,7 +1051,7 @@ function OfferCard({
           style={{
             width: 42,
             height: 42,
-            borderRadius: 999,
+            borderRadius: 16,
             border: "1px solid rgba(255,255,255,.08)",
             background: "#3A3A3A",
             color: "#fff",
@@ -1059,7 +1067,7 @@ function OfferCard({
         </button>
         <div
           style={{
-            borderRadius: 999,
+            borderRadius: 16,
             padding: "11px 16px",
             background: "linear-gradient(180deg,#289CFF,#178CFA)",
             color: "#fff",
@@ -1164,7 +1172,7 @@ function OfferSheet({
         </div>
 
         <div className="panel" style={{ padding: 12, color: T.text2, fontSize: 13 }}>
-          Offer ID: {offer.id} • Создан: {formatDate(offer.created_at)}
+          ID товара: {compactEntityId(offer.created_at, offer.id)} • Создан: {formatDate(offer.created_at)}
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
@@ -2371,26 +2379,36 @@ function OrdersScreen({
 
       {reviewing && (
         <Sheet onClose={() => setReviewing(null)}>
-          <SectionTitle>Отзыв о заказе</SectionTitle>
-          <div style={{ color: T.text2, fontSize: 13, marginBottom: 14 }}>
-            Оцени продавца @{getUsername(reviewing.seller)} и расскажи, как прошла сделка.
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <SectionTitle>Отзыв о заказе</SectionTitle>
+            <div style={{ color: T.text2, fontSize: 13, marginBottom: 12 }}>
+              Оцени продавца @{getUsername(reviewing.seller)} и расскажи, как прошла сделка.
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  key={value}
+                  onClick={() => setReviewRating(value)}
+                  className="tap-scale"
+                  style={{ background: "transparent", border: "none", color: value <= reviewRating ? T.gold : T.text3, fontSize: 26, cursor: "pointer", padding: "2px 4px" }}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <textarea
+              className="inp"
+              rows={4}
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value.slice(0, 200))}
+              placeholder="Напиши короткий отзыв..."
+              style={{ minHeight: 112, borderRadius: 24 }}
+            />
+            <div style={{ color: T.text3, fontSize: 12, marginTop: 8, marginBottom: 12 }}>{reviewText.length}/200</div>
+            <button className="btn-primary tap-scale" style={{ width: "100%", minHeight: 48, flexShrink: 0 }} onClick={submitReview} disabled={savingReview}>
+              {savingReview ? <Spinner /> : "Подтвердить"}
+            </button>
           </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            {[1, 2, 3, 4, 5].map((value) => (
-              <button
-                key={value}
-                onClick={() => setReviewRating(value)}
-                style={{ background: "transparent", border: "none", color: value <= reviewRating ? T.gold : T.text3, fontSize: 28, cursor: "pointer" }}
-              >
-                ★
-              </button>
-            ))}
-          </div>
-          <textarea className="inp" rows={5} value={reviewText} onChange={(e) => setReviewText(e.target.value.slice(0, 200))} placeholder="Напиши короткий отзыв..." />
-          <div style={{ color: T.text3, fontSize: 12, marginTop: 8 }}>{reviewText.length}/200</div>
-          <button className="btn-primary" style={{ width: "100%", marginTop: 14, position: "sticky", bottom: 0 }} onClick={submitReview} disabled={savingReview}>
-            {savingReview ? <Spinner /> : "Сохранить отзыв"}
-          </button>
         </Sheet>
       )}
     </div>
@@ -2777,7 +2795,7 @@ function AdminSheet({
   const [userDialogs, setUserDialogs] = useState<Array<{ user: User; last: Message }>>([]);
   const [dialogMessages, setDialogMessages] = useState<Message[]>([]);
   const [inspectedDialogUser, setInspectedDialogUser] = useState<User | null>(null);
-  const [adminTab, setAdminTab] = useState<"users" | "support">("users");
+  const [adminTab, setAdminTab] = useState<"users" | "items" | "support">("users");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
 
@@ -3034,7 +3052,10 @@ function AdminSheet({
         <>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
             <button className={`pill${adminTab === "users" ? " active" : ""}`} onClick={() => setAdminTab("users")}>
-              Пользователи и чаты
+              Пользователи
+            </button>
+            <button className={`pill${adminTab === "items" ? " active" : ""}`} onClick={() => setAdminTab("items")}>
+              Товары и отзывы
             </button>
             <button className={`pill${adminTab === "support" ? " active" : ""}`} onClick={() => setAdminTab("support")}>
               Центр поддержки
@@ -3355,16 +3376,18 @@ function AdminSheet({
             </>
           )}
 
+          {adminTab === "items" && (
+            <>
           <SectionTitle>Последние заказы</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             {recentOrders.map((order) => (
               <div key={order.id} className="panel" style={{ padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
-                  <div style={{ fontWeight: 700 }}>Order #{order.id}</div>
+                  <div style={{ fontWeight: 700 }}>Заказ #{shortOrderId(order.id)}</div>
                   <span className={order.status === "cancelled" ? "red-badge" : "gold-badge"}>{order.status}</span>
                 </div>
                 <div style={{ color: T.text2, fontSize: 13, lineHeight: 1.6, marginBottom: 10 }}>
-                  @{getUsername(order.buyer)} → @{getUsername(order.seller)} • {formatPrice(order.price, order.cur)} • Offer {order.offer_id}
+                  @{getUsername(order.buyer)} → @{getUsername(order.seller)} • {formatPrice(order.price, order.cur)} • Товар {compactEntityId(order.created_at, order.offer_id)}
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button className="btn-ghost" disabled={working || order.status === "cancelled"} onClick={() => refundOrder(order)}>
@@ -3383,12 +3406,12 @@ function AdminSheet({
             {recentReviews.map((review) => (
               <div key={review.id} className="panel" style={{ padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
-                  <div style={{ fontWeight: 700 }}>Review #{review.id}</div>
+                  <div style={{ fontWeight: 700 }}>Отзыв #{compactEntityId(review.created_at, review.id)}</div>
                   <div style={{ color: T.gold }}>{review.rating}/5</div>
                 </div>
                 <div style={{ color: T.text2, lineHeight: 1.6, marginBottom: 8 }}>{review.text || "Без текста"}</div>
                 <div style={{ color: T.text3, fontSize: 12, marginBottom: 10 }}>
-                  Заказ: {review.order_id} • Buyer: @{getUsername(review.buyer)} • Seller ID: {review.seller_uid}
+                  Заказ: #{shortOrderId(review.order_id)} • Покупатель: @{getUsername(review.buyer)} • Seller ID: {review.seller_uid}
                 </div>
                 <button className="btn-ghost" disabled={working} onClick={() => deleteReview(review)}>
                   Удалить отзыв
@@ -3396,6 +3419,8 @@ function AdminSheet({
               </div>
             ))}
           </div>
+            </>
+          )}
         </>
       )}
     </div>
