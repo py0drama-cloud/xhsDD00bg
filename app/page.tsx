@@ -204,21 +204,21 @@ const ROLE_PRESETS = [
 const CHAT_STICKERS = ["❤️", "😎", "🤣", "🔥", "👀", "🙏", "💀", "✨", "😡", "👍", "🎯", "🤝"];
 
 const T = {
-  bg: "#06020F",
-  bg1: "#0A0617",
-  bg2: "rgba(18, 14, 35, 0.78)",
-  bg3: "rgba(27, 20, 52, 0.74)",
-  bg4: "rgba(41, 30, 79, 0.92)",
-  line: "rgba(183, 155, 255, 0.16)",
-  line2: "rgba(219, 203, 255, 0.28)",
-  gold: "#9A63FF",
-  gold2: "#E1D6FF",
-  text: "#F7F2FF",
-  text2: "#C8BFE6",
-  text3: "#8D82B5",
-  red: "#FF73B4",
-  green: "#67F2D1",
-  blue: "#69C8FF",
+  bg: "#101010",
+  bg1: "#151515",
+  bg2: "rgba(28, 28, 28, 0.92)",
+  bg3: "rgba(39, 39, 39, 0.9)",
+  bg4: "rgba(55, 55, 55, 0.95)",
+  line: "rgba(255, 255, 255, 0.08)",
+  line2: "rgba(255, 255, 255, 0.16)",
+  gold: "#1E9BFF",
+  gold2: "#EAF5FF",
+  text: "#FFFFFF",
+  text2: "#A7A7A7",
+  text3: "#666666",
+  red: "#FF4F70",
+  green: "#58E0A7",
+  blue: "#2397FF",
 };
 
 const CSS = `
@@ -228,11 +228,7 @@ html,body{
   margin:0;
   padding:0;
   height:100%;
-  background:
-    radial-gradient(circle at 18% 0%, rgba(163,101,255,.32), transparent 34%),
-    radial-gradient(circle at 82% 12%, rgba(105,200,255,.18), transparent 24%),
-    radial-gradient(circle at 50% 120%, rgba(255,115,180,.12), transparent 40%),
-    #05020d;
+  background:#101010;
   color:${T.text};
   font-family:'Manrope',sans-serif
 }
@@ -246,18 +242,15 @@ body::before{
   position:fixed;
   inset:0;
   pointer-events:none;
-  background:
-    radial-gradient(circle at 12% 22%, rgba(255,255,255,.10) 0 1.5px, transparent 2.2px) 0 0/140px 140px,
-    radial-gradient(circle at 76% 18%, rgba(255,255,255,.08) 0 1.3px, transparent 2px) 0 0/180px 180px,
-    radial-gradient(circle at 58% 74%, rgba(255,255,255,.06) 0 1.4px, transparent 2px) 0 0/160px 160px;
-  opacity:.55
+  background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(0,0,0,.22));
+  opacity:.75
 }
 body::after{
   content:'';
   position:fixed;
   inset:0;
   pointer-events:none;
-  background:linear-gradient(180deg,rgba(5,2,13,0) 0%, rgba(5,2,13,.14) 38%, rgba(5,2,13,.78) 100%)
+  background:linear-gradient(180deg,rgba(16,16,16,0) 0%, rgba(16,16,16,.12) 45%, rgba(16,16,16,.78) 100%)
 }
 button,input,textarea,select{font:inherit}
 button{outline:none}
@@ -276,22 +269,22 @@ button{outline:none}
   pointer-events:none
 }
 .card{
-  background:linear-gradient(180deg,rgba(32,23,62,.74),rgba(12,9,26,.92));
+  background:linear-gradient(180deg,rgba(31,31,31,.96),rgba(23,23,23,.98));
   border:1px solid ${T.line2};
   border-radius:28px;
-  box-shadow:0 28px 60px rgba(4,2,12,.55), inset 0 1px 0 rgba(255,255,255,.08)
+  box-shadow:0 28px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08)
 }
 .panel{
-  background:linear-gradient(180deg,rgba(28,20,56,.66),rgba(11,8,23,.88));
+  background:linear-gradient(180deg,rgba(31,31,31,.88),rgba(22,22,22,.96));
   border:1px solid ${T.line};
   border-radius:22px;
-  box-shadow:0 18px 40px rgba(4,2,12,.42)
+  box-shadow:0 18px 40px rgba(0,0,0,.35)
 }
 .inp{
   width:100%;
-  background:rgba(12,9,24,.72);
-  border:1px solid rgba(219,203,255,.12);
-  border-radius:18px;
+  background:rgba(24,24,24,.95);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;
   padding:13px 16px;
   color:${T.text};
   outline:none;
@@ -299,8 +292,8 @@ button{outline:none}
 }
 .inp::placeholder{color:${T.text3}}
 .inp:focus{
-  border-color:rgba(154,99,255,.58);
-  box-shadow:0 0 0 4px rgba(154,99,255,.14), inset 0 1px 0 rgba(255,255,255,.08)
+  border-color:rgba(35,151,255,.58);
+  box-shadow:0 0 0 4px rgba(35,151,255,.14), inset 0 1px 0 rgba(255,255,255,.08)
 }
 textarea.inp{resize:none}
 select.inp{
@@ -326,11 +319,11 @@ select.inp{
   border:none;
   border-radius:18px;
   padding:12px 16px;
-  background:linear-gradient(135deg,#8B5FFF,#5F8DFF 58%,#59CFFF 100%);
+  background:linear-gradient(135deg,#2498FF,#1688F8);
   color:#fff;
   font-weight:800;
   cursor:pointer;
-  box-shadow:0 18px 28px rgba(95,89,255,.34)
+  box-shadow:0 18px 28px rgba(35,151,255,.28)
 }
 .btn-primary:disabled{opacity:.45;cursor:not-allowed}
 .btn-ghost{
@@ -338,10 +331,10 @@ select.inp{
   align-items:center;
   justify-content:center;
   gap:8px;
-  border:1px solid rgba(219,203,255,.15);
+  border:1px solid rgba(255,255,255,.12);
   border-radius:18px;
   padding:11px 14px;
-  background:rgba(18,14,35,.72);
+  background:rgba(35,35,35,.9);
   color:${T.text};
   cursor:pointer;
   backdrop-filter:blur(18px);
@@ -354,21 +347,21 @@ select.inp{
   gap:6px;
   padding:9px 14px;
   border-radius:999px;
-  border:1px solid rgba(219,203,255,.14);
-  background:rgba(18,14,35,.68);
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(31,31,31,.92);
   color:${T.text2};
   cursor:pointer;
   white-space:nowrap;
   backdrop-filter:blur(18px)
 }
 .pill.active{
-  border-color:rgba(154,99,255,.42);
+  border-color:rgba(35,151,255,.48);
   color:${T.text};
-  background:linear-gradient(135deg,rgba(145,96,255,.3),rgba(89,207,255,.12))
+  background:linear-gradient(135deg,rgba(35,151,255,.34),rgba(35,151,255,.12))
 }
 .gold-badge,.blue-badge,.red-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
-.gold-badge{background:rgba(154,99,255,.16);border:1px solid rgba(154,99,255,.32);color:${T.gold2}}
-.blue-badge{background:rgba(105,200,255,.14);border:1px solid rgba(105,200,255,.28);color:${T.blue}}
+.gold-badge{background:rgba(35,151,255,.16);border:1px solid rgba(35,151,255,.32);color:${T.gold2}}
+.blue-badge{background:rgba(35,151,255,.14);border:1px solid rgba(35,151,255,.28);color:${T.blue}}
 .red-badge{background:rgba(255,115,180,.14);border:1px solid rgba(255,115,180,.28);color:${T.red}}
 .title{font-family:'Sora',sans-serif;font-weight:700;letter-spacing:-.04em}
 .soft-text{color:${T.text3}}
@@ -609,21 +602,23 @@ function BalanceChip({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
+        gap: 10,
         minWidth: 0,
-        border: `1px solid ${isStars ? "rgba(255,212,57,.2)" : "rgba(105,200,255,.28)"}`,
+        border: "1px solid rgba(35,151,255,.22)",
         borderRadius: 999,
-        padding: "8px 12px",
-        background: isStars ? "rgba(255,212,57,.08)" : "rgba(105,200,255,.12)",
+        padding: "9px 16px",
+        background: "linear-gradient(180deg,rgba(16,43,68,.98),rgba(13,34,55,.98))",
         color: T.text,
         fontWeight: 900,
         cursor: "pointer",
-        boxShadow: "0 14px 28px rgba(4,2,12,.3)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,.1), 0 10px 22px rgba(0,0,0,.32)",
         backdropFilter: "blur(18px)",
       }}
     >
-      <span style={{ color: isStars ? "#FFD439" : T.blue }}>{isStars ? "✦" : "R$"}</span>
-      <span style={{ whiteSpace: "nowrap", fontSize: 13 }}>{formatWorth(value)} {isStars ? "STARS" : "ROBUX"}</span>
+      <span style={{ color: "#fff", fontSize: 22, lineHeight: 1 }}>▽</span>
+      <span style={{ whiteSpace: "nowrap", fontSize: 18, letterSpacing: ".01em" }}>
+        {isStars ? `${formatWorth(value || 0)} TON` : `${formatWorth(value || 0)} R$`}
+      </span>
     </button>
   );
 }
@@ -973,58 +968,81 @@ function OfferCard({
     <button
       onClick={() => onOpen(offer)}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
+        display: "block",
         width: "100%",
         textAlign: "left",
-        background: "linear-gradient(180deg,rgba(28,20,55,.72),rgba(11,8,23,.9))",
-        border: `1px solid ${T.line}`,
-        borderRadius: 24,
-        padding: 12,
+        background: "linear-gradient(180deg,#202020,#181818)",
+        border: "1px solid rgba(255,255,255,.05)",
+        borderRadius: 32,
+        padding: 16,
         overflow: "hidden",
         cursor: "pointer",
         color: T.text,
-        boxShadow: "0 16px 36px rgba(4,2,12,.38)",
-        backdropFilter: "blur(20px)",
+        boxShadow: "0 22px 48px rgba(0,0,0,.42)",
       }}
     >
       <div
         style={{
-          width: 78,
-          height: 78,
-          flexShrink: 0,
-          borderRadius: 22,
+          width: "100%",
+          aspectRatio: "1.92 / 1",
+          borderRadius: 24,
           background: cover ? `url(${cover}) center/cover` : getProfileGradient(seller),
           position: "relative",
           overflow: "hidden",
-          border: `1px solid ${T.line2}`,
+          border: "1px solid rgba(255,255,255,.08)",
+          marginBottom: 14,
         }}
       >
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0),rgba(6,2,15,.46))" }} />
-        <div style={{ position: "absolute", left: 8, bottom: 8 }}>
-          <span className="gold-badge">{getTypeIcon(offer.type)}</span>
-        </div>
+        <div style={{ position: "absolute", inset: 0, background: cover ? "linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.08))" : "radial-gradient(circle at 50% 45%,rgba(255,255,255,.25),transparent 28%)" }} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{offer.title}</div>
-            <div style={{ fontSize: 12, color: T.text2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              @{getUsername(seller)} • {KIND_LABELS[offer.kind]}
+      <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1.1, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {offer.title} <span style={{ color: T.text2, fontSize: 17, fontWeight: 900 }}>{offer.type}</span>
+      </div>
+      <div style={{ height: 1, background: "rgba(255,255,255,.72)", marginBottom: 12 }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <Avatar user={seller} size={48} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: T.text2, fontSize: 17, fontWeight: 900, lineHeight: 1 }}>Продавец</div>
+            <div style={{ color: T.text, fontSize: 21, fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              @{getUsername(seller)}
             </div>
           </div>
-          <div style={{ flexShrink: 0 }}>
-            <CurBadge cur={offer.cur} price={offer.price} />
-          </div>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          <span className="pill" style={{ padding: "6px 10px" }}>
-            {offer.type}
-          </span>
-          <span style={{ fontSize: 12, color: T.text3 }}>Продаж: {offer.sales || 0}</span>
-          <span style={{ fontSize: 12, color: T.text3 }}>В наличии: {Math.max(0, Number(offer.stock ?? 1))}</span>
-          {offer.boost_end > Date.now() && <span className="gold-badge">Boost</span>}
+        <button
+          type="button"
+          style={{
+            width: 54,
+            height: 54,
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,.08)",
+            background: "#3A3A3A",
+            color: "#fff",
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9h12l-1 10H7L6 9Z" />
+            <path d="M9 9a3 3 0 0 1 6 0" />
+          </svg>
+        </button>
+        <div
+          style={{
+            borderRadius: 999,
+            padding: "15px 24px",
+            background: "linear-gradient(180deg,#289CFF,#178CFA)",
+            color: "#fff",
+            fontSize: 22,
+            fontWeight: 900,
+            minWidth: 132,
+            textAlign: "center",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,.2)",
+            flexShrink: 0,
+          }}
+        >
+          {offer.price} ▽
         </div>
       </div>
     </button>
@@ -1611,80 +1629,113 @@ function HomeScreen({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div className="scroll" style={{ flex: 1, padding: "18px 16px 116px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
-          <BalanceChip kind="STARS" value={me.stars} onClick={onOpenWallet} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <BalanceChip kind="ROBUX" value={me.robux} onClick={onOpenWallet} />
-            <RoundIconButton onClick={onOpenMenu} label="Меню">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M5 7h14M5 12h14M5 17h14" />
+      <div className="scroll" style={{ flex: 1, padding: "20px 16px 122px", background: "#101010" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <button
+            className="btn-ghost"
+            style={{ borderRadius: 999, padding: "10px 16px", background: "#2B2B2B", color: "#fff", fontSize: 18, fontWeight: 900 }}
+            onClick={() => getTelegramWebApp()?.close()}
+          >
+            × Закрыть
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <RoundIconButton onClick={onOpenMenu} label="Свернуть">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m6 9 6 6 6-6" />
               </svg>
             </RoundIconButton>
+            <RoundIconButton onClick={onOpenMenu} label="Меню">
+              <span style={{ fontSize: 25, lineHeight: 1, marginTop: -7 }}>...</span>
+            </RoundIconButton>
           </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+          <BalanceChip kind="STARS" value={me.stars} onClick={onOpenWallet} />
+          <BalanceChip kind="ROBUX" value={me.robux} onClick={onOpenWallet} />
         </div>
 
         <div
           style={{
             position: "relative",
             overflow: "hidden",
-            minHeight: 100,
-            borderRadius: 28,
-            padding: 18,
-            marginBottom: 16,
-            background: "radial-gradient(circle at 78% 30%,rgba(105,200,255,.55),transparent 28%),radial-gradient(circle at 34% 85%,rgba(154,99,255,.62),transparent 34%),linear-gradient(135deg,#211344,#6077FF 56%,#BDEFFF)",
-            boxShadow: "0 26px 60px rgba(95,89,255,.28)",
+            minHeight: 128,
+            borderRadius: 30,
+            padding: 22,
+            marginBottom: 24,
+            background: "radial-gradient(circle at 80% 34%,rgba(170,230,255,.86),transparent 18%),radial-gradient(circle at 62% 60%,rgba(63,142,255,.8),transparent 24%),radial-gradient(circle at 34% 48%,rgba(119,72,255,.85),transparent 32%),linear-gradient(135deg,#171128,#315DCE 58%,#B6EDFF)",
+            boxShadow: "0 22px 48px rgba(0,0,0,.38)",
           }}
         >
-          <div style={{ position: "absolute", right: 16, top: 16, width: 84, height: 58, borderRadius: 20, background: "rgba(255,255,255,.22)", transform: "rotate(-8deg)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.24)" }} />
-          <div className="title" style={{ position: "relative", fontSize: 28, lineHeight: 1, textShadow: "0 2px 14px rgba(0,0,0,.34)" }}>
+          <div style={{ position: "absolute", right: 25, top: 18, width: 116, height: 86, borderRadius: 24, background: "linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,.08))", transform: "rotate(-8deg)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.28)" }} />
+          <div style={{ position: "absolute", right: 126, bottom: 16, width: 54, height: 54, borderRadius: 999, border: "8px solid rgba(255,255,255,.28)", boxShadow: "0 0 28px rgba(255,255,255,.28)" }} />
+          <div className="title" style={{ position: "relative", fontSize: 36, lineHeight: 1, textShadow: "0 2px 14px rgba(0,0,0,.34)" }}>
             3 collections
           </div>
-          <div style={{ position: "relative", display: "inline-flex", marginTop: 5, padding: "4px 10px", borderRadius: 999, background: "rgba(70,35,124,.5)", color: "#fff", fontSize: 16, fontWeight: 900 }}>
+          <div style={{ position: "relative", display: "inline-flex", marginTop: 7, padding: "5px 12px", borderRadius: 999, background: "rgba(88,55,160,.58)", color: "#fff", fontSize: 24, lineHeight: 1, fontWeight: 900 }}>
             Commission 0%
           </div>
         </div>
 
-        <div className="panel" style={{ padding: 12, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 18, marginBottom: 24 }}>
+          <button onClick={() => setKindFilter("ALL")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "ALL" ? "#fff" : "#3D3D3D", fontSize: 38, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
+            All items
+          </button>
+          <button onClick={() => setKindFilter("PRODUCT")} style={{ border: "none", background: "transparent", padding: 0, color: kindFilter === "PRODUCT" ? "#fff" : "#3D3D3D", fontSize: 34, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
+            Collections
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 58px 58px 58px", gap: 10, marginBottom: 12 }}>
           <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.text3, fontSize: 16 }}>⌕</span>
+            <span style={{ position: "absolute", left: 17, top: "50%", transform: "translateY(-50%)", color: "#6B6B6B", fontSize: 33, lineHeight: 1 }}>⌕</span>
             <input
               className="inp"
-              style={{ paddingLeft: 40 }}
+              style={{ height: 58, paddingLeft: 58, fontSize: 21, fontWeight: 900, borderRadius: 999, background: "#1A1A1A" }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Поиск по товарам и услугам..."
+              placeholder="Quick find"
             />
           </div>
+          <button className="btn-ghost" style={{ width: 58, height: 58, borderRadius: 999, padding: 0, background: "#3A3A3A" }} onClick={() => setSort(sort === "sales" ? "new" : "sales")}>
+            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 14c2 0 2-8 4-8s2 12 4 12 2-8 4-8 2 4 4 4" />
+            </svg>
+          </button>
+          <button className="btn-ghost" style={{ width: 58, height: 58, borderRadius: 999, padding: 0, background: "#3A3A3A" }} onClick={onOpenMenu}>
+            <svg width="29" height="29" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" strokeWidth="2.8" strokeLinecap="round">
+              <path d="M5 7h14M5 12h14M5 17h14" />
+            </svg>
+          </button>
+          <button className="btn-ghost" style={{ width: 58, height: 58, borderRadius: 999, padding: 0, background: "#fff" }} onClick={onOpenMenu}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 14 6-6 6 6" />
+            </svg>
+          </button>
         </div>
 
-        <div className="hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 12, paddingBottom: 2 }}>
-          {[{ label: "Все", value: "ALL" }, ...Object.entries(KIND_LABELS).map(([value, label]) => ({ label, value }))].map((item) => (
-            <button key={item.value} className={`pill${kindFilter === item.value ? " active" : ""}`} onClick={() => setKindFilter(item.value as OfferKind | "ALL")}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="home-select-grid">
-          <select className="inp" style={{ minWidth: 0 }} value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as Currency | "ALL")}>
-            <option value="ALL">Любая валюта</option>
-            <option value="STARS">Stars</option>
-            <option value="ROBUX">Robux</option>
-          </select>
-          <select className="inp" style={{ minWidth: 0 }} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-            <option value="new">Сначала новые</option>
-            <option value="sales">По продажам</option>
-            <option value="price_asc">Цена по возрастанию</option>
-            <option value="price_desc">Цена по убыванию</option>
-          </select>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-          <div className="title" style={{ fontSize: 19 }}>
-            Все офферы
+        <div className="panel" style={{ display: "grid", gridTemplateColumns: "1fr 110px", alignItems: "center", minHeight: 70, borderRadius: 24, padding: "12px 16px", marginBottom: 14, background: "#1A1A1A" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <span style={{ width: 28, height: 28, borderRadius: 999, background: "#fff", display: "block", boxShadow: "0 0 0 3px rgba(255,255,255,.18)" }} />
+            <span style={{ height: 8, flex: 1, borderRadius: 999, background: "#8A8A8A", display: "block" }} />
           </div>
-          <div style={{ color: T.text3, fontSize: 12 }}>{filtered.length} результатов</div>
+          <div style={{ borderLeft: "2px solid #555", paddingLeft: 22, textAlign: "right" }}>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>0 TON</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: "#686868" }}>{filtered.length} items</div>
+          </div>
+        </div>
+
+        <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: 9, overflowX: "auto", marginBottom: 26, paddingBottom: 2 }}>
+          <button className="btn-ghost" style={{ width: 52, height: 52, borderRadius: 999, padding: 0, background: "#222" }}>
+            <svg width="25" height="25" viewBox="0 0 24 24" fill="#A7A7A7"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" /></svg>
+          </button>
+          <button className="btn-ghost" style={{ width: 52, height: 52, borderRadius: 999, padding: 0, background: "#222" }} onClick={() => setSort(sort === "price_asc" ? "price_desc" : "price_asc")}>
+            <span style={{ color: "#A7A7A7", fontSize: 31, fontWeight: 900, lineHeight: 1 }}>↕</span>
+          </button>
+          <div style={{ width: 2, height: 38, background: "#444", margin: "0 8px" }} />
+          <button className="pill active" style={{ height: 52, padding: "0 24px", fontSize: 22 }}>Collection⌄</button>
+          <button className="pill" style={{ height: 52, padding: "0 24px", fontSize: 22 }} onClick={() => setCurrencyFilter(currencyFilter === "ROBUX" ? "ALL" : "ROBUX")}>Model⌄</button>
+          <div style={{ color: "#777", fontSize: 36, fontWeight: 900 }}>›</div>
         </div>
 
         {loading && (
@@ -1693,10 +1744,10 @@ function HomeScreen({
           </div>
         )}
 
-        {!loading && filtered.length === 0 && <div style={{ color: T.text3, textAlign: "center", padding: "60px 0" }}>Ничего не найдено.</div>}
+        {!loading && filtered.length === 0 && <div style={{ color: T.text3, textAlign: "center", padding: "60px 0" }}>Nothing found.</div>}
 
         {!loading && filtered.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {filtered.map((offer) => (
               <OfferCard key={offer.id} offer={offer} onOpen={onOpenOffer} />
             ))}
@@ -3454,8 +3505,8 @@ function TabBar({
 }) {
   const compact = Boolean(isAdmin);
   const NavIcon = ({ name, active }: { name: "home" | "chat" | "plus" | "orders" | "profile" | "admin"; active: boolean }) => {
-    const color = active ? "#fff" : "rgba(247,242,255,.72)";
-    const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+    const color = active ? T.blue : "#777";
+    const common = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
     if (name === "home") return <svg {...common}><path d="M3 10.8 12 4l9 6.8" /><path d="M5.5 10.5V20h13V10.5" /></svg>;
     if (name === "chat") return <svg {...common}><path d="M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" /></svg>;
     if (name === "plus") return <svg {...common}><path d="M12 5v14" /><path d="M5 12h14" /></svg>;
@@ -3465,10 +3516,10 @@ function TabBar({
   };
 
   const items: Array<{ id: string; label: string; icon: "home" | "chat" | "plus" | "orders" | "profile" | "admin"; badge?: number; action?: () => void }> = [
-    { id: "home", label: "Главная", icon: "home" as const },
-    { id: "chats", label: "Чаты", icon: "chat" as const, badge: unread },
-    { id: "create", label: "Создать", icon: "plus" as const, action: onCreate },
-    { id: "orders", label: "Заказы", icon: "orders" as const, badge: pendingOrders },
+    { id: "home", label: "Games", icon: "home" as const },
+    { id: "chats", label: "Store", icon: "chat" as const, badge: unread },
+    { id: "create", label: "My gifts", icon: "plus" as const, action: onCreate },
+    { id: "orders", label: "Season", icon: "orders" as const, badge: pendingOrders },
     { id: "profile", label: "Профиль", icon: "profile" as const },
   ];
   if (isAdmin) items.push({ id: "admin", label: "Админ", icon: "admin" as const });
@@ -3481,13 +3532,16 @@ function TabBar({
         right: compact ? 12 : 16,
         bottom: 10,
         display: "flex",
+        alignItems: "center",
         padding: compact ? 6 : 8,
-        borderRadius: compact ? 24 : 28,
-        background: "linear-gradient(180deg,rgba(25,18,49,.82),rgba(9,6,19,.96))",
-        border: `1px solid ${T.line2}`,
-        boxShadow: "0 24px 50px rgba(4,2,12,.6)",
+        borderRadius: 999,
+        background: "linear-gradient(180deg,rgba(22,22,22,.72),rgba(12,12,12,.9))",
+        border: "1px solid rgba(255,255,255,.08)",
+        boxShadow: "0 24px 50px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.06)",
         backdropFilter: "blur(24px)",
         zIndex: 40,
+        maxWidth: 420,
+        margin: "0 auto",
         paddingBottom: compact ? "calc(6px + env(safe-area-inset-bottom, 0px))" : "calc(8px + env(safe-area-inset-bottom, 0px))",
       }}
     >
@@ -3506,7 +3560,7 @@ function TabBar({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: compact ? 2 : 6,
+              gap: compact ? 2 : 5,
               cursor: "pointer",
               position: "relative",
               minWidth: 0,
@@ -3515,19 +3569,19 @@ function TabBar({
           >
             <span
               style={{
-                width: compact ? 36 : 42,
-                height: compact ? 36 : 42,
-                borderRadius: compact ? 13 : 16,
-                background: active ? "linear-gradient(135deg,#8B5FFF,#5F8DFF 62%,#59CFFF)" : "rgba(255,255,255,.04)",
-                border: active ? "1px solid rgba(255,255,255,.2)" : "1px solid rgba(255,255,255,.06)",
+                width: compact ? 36 : 58,
+                height: compact ? 36 : 58,
+                borderRadius: 999,
+                background: active ? "radial-gradient(circle at 50% 50%,rgba(35,151,255,.26),rgba(0,0,0,.35) 62%,rgba(0,0,0,.2))" : "transparent",
+                border: active ? "1px solid rgba(255,255,255,.12)" : "1px solid transparent",
                 display: "grid",
                 placeItems: "center",
-                boxShadow: active ? "0 14px 26px rgba(95,89,255,.28)" : "none",
+                boxShadow: active ? "0 0 28px rgba(35,151,255,.32)" : "none",
               }}
             >
               <NavIcon name={item.icon} active={active} />
             </span>
-            {!compact && <span style={{ fontSize: 11, fontWeight: 800, color: active ? T.text : T.text3, lineHeight: 1, whiteSpace: "nowrap" }}>{item.label}</span>}
+            {!compact && <span style={{ fontSize: 13, fontWeight: 900, color: active ? T.blue : "#777", lineHeight: 1, whiteSpace: "nowrap" }}>{item.label}</span>}
             {item.badge ? (
               <span
                 style={{
