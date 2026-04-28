@@ -593,6 +593,74 @@ function CurBadge({ cur, price }: { cur: Currency; price?: number }) {
   );
 }
 
+function BalanceChip({
+  kind,
+  value,
+  onClick,
+}: {
+  kind: Currency;
+  value: number;
+  onClick?: () => void;
+}) {
+  const isStars = kind === "STARS";
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        border: `1px solid ${isStars ? "rgba(255,212,57,.2)" : "rgba(105,200,255,.28)"}`,
+        borderRadius: 999,
+        padding: "8px 12px",
+        background: isStars ? "rgba(255,212,57,.08)" : "rgba(105,200,255,.12)",
+        color: T.text,
+        fontWeight: 900,
+        cursor: "pointer",
+        boxShadow: "0 14px 28px rgba(4,2,12,.3)",
+        backdropFilter: "blur(18px)",
+      }}
+    >
+      <span style={{ color: isStars ? "#FFD439" : T.blue }}>{isStars ? "✦" : "R$"}</span>
+      <span style={{ whiteSpace: "nowrap", fontSize: 13 }}>{formatWorth(value)} {isStars ? "STARS" : "ROBUX"}</span>
+    </button>
+  );
+}
+
+function RoundIconButton({
+  children,
+  onClick,
+  label,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      style={{
+        width: 42,
+        height: 42,
+        border: `1px solid ${T.line2}`,
+        borderRadius: 999,
+        background: "rgba(18,14,35,.72)",
+        color: T.text,
+        display: "grid",
+        placeItems: "center",
+        cursor: "pointer",
+        boxShadow: "0 14px 28px rgba(4,2,12,.32)",
+        backdropFilter: "blur(18px)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 function Avatar({ user, size = 42, onClick }: { user: User | null | undefined; size?: number; onClick?: () => void }) {
   const [failed, setFailed] = useState(false);
   const src = getAvatar(user);
@@ -1483,9 +1551,13 @@ function UserProfileSheet({
 function HomeScreen({
   me,
   onOpenOffer,
+  onOpenMenu,
+  onOpenWallet,
 }: {
   me: User;
   onOpenOffer: (offer: Offer) => void;
+  onOpenMenu: () => void;
+  onOpenWallet: () => void;
 }) {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1540,34 +1612,36 @@ function HomeScreen({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div className="scroll" style={{ flex: 1, padding: "18px 16px 116px" }}>
-        <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-            <div
-              style={{
-                width: 54,
-                height: 54,
-                borderRadius: 20,
-                background: "linear-gradient(135deg,#8B5FFF,#5F8DFF 60%,#59CFFF)",
-                display: "grid",
-                placeItems: "center",
-                boxShadow: "0 22px 42px rgba(95,89,255,.34)",
-                flexShrink: 0,
-              }}
-            >
-              <span className="title" style={{ color: "#fff", fontSize: 26 }}>
-                R
-              </span>
-            </div>
-            <div className="title" style={{ fontSize: 26, minWidth: 0 }}>
-              RoWorth
-            </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+          <BalanceChip kind="STARS" value={me.stars} onClick={onOpenWallet} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <BalanceChip kind="ROBUX" value={me.robux} onClick={onOpenWallet} />
+            <RoundIconButton onClick={onOpenMenu} label="Меню">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M5 7h14M5 12h14M5 17h14" />
+              </svg>
+            </RoundIconButton>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <StarsBadge value={me.stars} />
-            <div className="panel" style={{ padding: "8px 12px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 800, color: T.text }}>
-              <span style={{ color: T.blue }}>R$</span>
-              <span>{me.robux}</span>
-            </div>
+        </div>
+
+        <div
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            minHeight: 100,
+            borderRadius: 28,
+            padding: 18,
+            marginBottom: 16,
+            background: "radial-gradient(circle at 78% 30%,rgba(105,200,255,.55),transparent 28%),radial-gradient(circle at 34% 85%,rgba(154,99,255,.62),transparent 34%),linear-gradient(135deg,#211344,#6077FF 56%,#BDEFFF)",
+            boxShadow: "0 26px 60px rgba(95,89,255,.28)",
+          }}
+        >
+          <div style={{ position: "absolute", right: 16, top: 16, width: 84, height: 58, borderRadius: 20, background: "rgba(255,255,255,.22)", transform: "rotate(-8deg)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.24)" }} />
+          <div className="title" style={{ position: "relative", fontSize: 28, lineHeight: 1, textShadow: "0 2px 14px rgba(0,0,0,.34)" }}>
+            3 collections
+          </div>
+          <div style={{ position: "relative", display: "inline-flex", marginTop: 5, padding: "4px 10px", borderRadius: 999, background: "rgba(70,35,124,.5)", color: "#fff", fontSize: 16, fontWeight: 900 }}>
+            Commission 0%
           </div>
         </div>
 
@@ -3246,6 +3320,123 @@ function BannedScreen({ me }: { me: User }) {
   );
 }
 
+function WalletSheet({
+  me,
+  onClose,
+  showToast,
+}: {
+  me: User;
+  onClose: () => void;
+  showToast: (message: string, type?: "ok" | "err") => void;
+}) {
+  const action = (name: string) => showToast(`${name}: платежный провайдер будет подключен позже.`, "err");
+  return (
+    <Sheet onClose={onClose} maxWidth={540}>
+      <SectionTitle>Баланс</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+        <div className="panel" style={{ padding: 14, background: "linear-gradient(135deg,rgba(154,99,255,.24),rgba(105,200,255,.12))" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <span style={{ color: T.text2, fontSize: 12, fontWeight: 800 }}>Основной</span>
+            <span className="blue-badge">Stars/USDT</span>
+          </div>
+          <div className="title" style={{ fontSize: 26, marginTop: 12 }}>{formatWorth(me.stars)}</div>
+          <div style={{ color: T.text3, fontSize: 12, marginTop: 2 }}>внутренняя валюта</div>
+        </div>
+        <div className="panel" style={{ padding: 14, background: "linear-gradient(135deg,rgba(103,242,209,.18),rgba(105,200,255,.1))" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <span style={{ color: T.text2, fontSize: 12, fontWeight: 800 }}>Robux</span>
+            <span className="gold-badge">R$</span>
+          </div>
+          <div className="title" style={{ fontSize: 26, marginTop: 12 }}>{formatWorth(me.robux)}</div>
+          <div style={{ color: T.text3, fontSize: 12, marginTop: 2 }}>для Roblox-сделок</div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+        <button className="btn-primary" onClick={() => action("Пополнение Stars/USDT")}>Пополнить</button>
+        <button className="btn-ghost" onClick={() => action("Вывод средств")}>Вывести</button>
+      </div>
+
+      <div className="panel" style={{ padding: 14, marginBottom: 12 }}>
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Подготовлено для платежей</div>
+        <div style={{ display: "grid", gap: 8, color: T.text2, fontSize: 13, lineHeight: 1.45 }}>
+          <div>• покупка товаров за Stars/USDT баланс;</div>
+          <div>• покупка товаров за Robux баланс;</div>
+          <div>• пополнение основного баланса Telegram Stars или USDT;</div>
+          <div>• пополнение/вывод Robux после подключения провайдера.</div>
+        </div>
+      </div>
+
+      <div className="panel" style={{ padding: 14 }}>
+        <div style={{ fontWeight: 900, marginBottom: 12 }}>История транзакций</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: T.text2, fontSize: 13 }}>
+          <span>Бонус</span>
+          <span style={{ color: T.gold2, fontWeight: 900 }}>+1 ✦</span>
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+function MarketMenuSheet({
+  onClose,
+  showToast,
+}: {
+  onClose: () => void;
+  showToast: (message: string, type?: "ok" | "err") => void;
+}) {
+  const openLink = (label: string) => showToast(`${label}: ссылку можно будет заменить на реальный канал.`);
+  return (
+    <Sheet onClose={onClose} maxWidth={540}>
+      <SectionTitle>Menu</SectionTitle>
+      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Language</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+        <button className="pill active">RU</button>
+        <button className="pill">EN</button>
+      </div>
+
+      <div style={{ color: T.text3, fontSize: 11, fontWeight: 900, textTransform: "uppercase", marginBottom: 9 }}>Links</div>
+      <div className="panel" style={{ overflow: "hidden", marginBottom: 16 }}>
+        {[
+          ["Portals Web", "🌐"],
+          ["Gift Account", "◇"],
+          ["Portals Games", "🎮"],
+          ["Portals Channel", "↗"],
+        ].map(([label, icon], index) => (
+          <button
+            key={label}
+            onClick={() => openLink(label)}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "14px 15px",
+              border: "none",
+              borderTop: index ? `1px solid ${T.line}` : "none",
+              background: "transparent",
+              color: T.text,
+              cursor: "pointer",
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 10, fontWeight: 800 }}>
+              <span>{icon}</span>
+              {label}
+            </span>
+            <span style={{ color: T.text3 }}>›</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <button className="btn-ghost" onClick={() => openLink("Privacy")}>Privacy</button>
+        <button className="btn-primary" onClick={() => openLink("Contact the Team")}>Contact the Team</button>
+      </div>
+    </Sheet>
+  );
+}
+
 function TabBar({
   tab,
   setTab,
@@ -3377,6 +3568,8 @@ export default function App() {
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [autoContent, setAutoContent] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "ok" | "err" } | null>(null);
   const [unread, setUnread] = useState(0);
@@ -3830,7 +4023,14 @@ export default function App() {
           />
         ) : null}
 
-        {!chatUser && tab === "home" && <HomeScreen me={me} onOpenOffer={setSelectedOffer} />}
+        {!chatUser && tab === "home" && (
+          <HomeScreen
+            me={me}
+            onOpenOffer={setSelectedOffer}
+            onOpenMenu={() => setShowMenu(true)}
+            onOpenWallet={() => setShowWallet(true)}
+          />
+        )}
         {!chatUser && tab === "chats" && <ChatsScreen me={me} onOpenChat={openChat} onOpenSupportChat={async () => {
           const { data } = await supabase.from("users").select("*").eq("is_admin", true).order("created_at", { ascending: true }).limit(1);
           const supportAdmin = (data?.[0] || null) as User | null;
@@ -3857,6 +4057,9 @@ export default function App() {
       </div>
 
       {!chatUser && <TabBar tab={tab} setTab={setTab} unread={unread} pendingOrders={pendingOrders} onCreate={() => setShowCreate(true)} isAdmin={Boolean(me.is_admin)} />}
+
+      {showWallet && <WalletSheet me={me} onClose={() => setShowWallet(false)} showToast={showToast} />}
+      {showMenu && <MarketMenuSheet onClose={() => setShowMenu(false)} showToast={showToast} />}
 
       {selectedOffer && (
         <OfferSheet
