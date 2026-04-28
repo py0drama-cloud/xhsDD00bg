@@ -106,6 +106,7 @@ type ChatMode = "regular" | "support";
 
 type SupportReason = "ORDER" | "PAYMENT" | "ACCOUNT" | "OTHER";
 type SupportRole = "BUYER" | "SELLER";
+type SupportTicket = { id: string; user: User; text: string; created_at: string };
 
 const KIND_LABELS: Record<OfferKind, string> = {
   PRODUCT: "Товар",
@@ -2759,6 +2760,7 @@ function AdminSheet({
   onUserUpdated,
   onOpenChat,
   onOpenSupportChat,
+  notifyTelegram,
   showToast,
 }: {
   me: User;
@@ -2766,6 +2768,7 @@ function AdminSheet({
   onUserUpdated: (user: User) => void;
   onOpenChat: (user: User) => void;
   onOpenSupportChat: (user: User) => void;
+  notifyTelegram: (chatId: string, text: string, buttonText?: string, buttonUrl?: string) => Promise<void>;
   showToast: (message: string, type?: "ok" | "err") => void;
 }) {
   const [stats, setStats] = useState({ users: 0, offers: 0, orders: 0, reviews: 0, banned: 0, pending: 0 });
@@ -2781,7 +2784,9 @@ function AdminSheet({
   const [starsAdjust, setStarsAdjust] = useState("0");
   const [robuxAdjust, setRobuxAdjust] = useState("0");
   const [supportUsers, setSupportUsers] = useState<User[]>([]);
-  const [supportTickets, setSupportTickets] = useState<Array<{ id: string; user: User; text: string; created_at: string }>>([]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [selectedSupportTicket, setSelectedSupportTicket] = useState<SupportTicket | null>(null);
+  const [supportReply, setSupportReply] = useState("");
   const [userDialogs, setUserDialogs] = useState<Array<{ user: User; last: Message }>>([]);
   const [dialogMessages, setDialogMessages] = useState<Message[]>([]);
   const [inspectedDialogUser, setInspectedDialogUser] = useState<User | null>(null);
@@ -2800,7 +2805,7 @@ function AdminSheet({
       supabase.from("users").select("*").order("created_at", { ascending: false }).limit(8),
       supabase.from("orders").select("*, buyer:users!buyer_uid(*), seller:users!seller_uid(*)").order("created_at", { ascending: false }).limit(8),
       supabase.from("reviews").select("*, buyer:users!buyer_uid(*)").order("created_at", { ascending: false }).limit(8),
-      supabase.from("messages").select("id,text,created_at,from_user:users!from_uid(*)").eq("file_type", "support").like("text", "[Тикет поддержки]%").order("created_at", { ascending: false }).limit(30),
+      supabase.from("messages").select("id,text,created_at,from_user:users!from_uid(*)").eq("file_type", "support").like("text", "[Тикет поддержки%").order("created_at", { ascending: false }).limit(50),
     ]);
 
     setStats({
@@ -2815,7 +2820,7 @@ function AdminSheet({
     setRecentOrders((recentOrdersData.data || []) as Order[]);
     setRecentReviews((recentReviewsData.data || []) as Review[]);
     const uniqueSupportUsers = new Map<string, User>();
-    const nextTickets: Array<{ id: string; user: User; text: string; created_at: string }> = [];
+    const nextTickets: SupportTicket[] = [];
     ((supportMessagesData.data || []) as unknown as Array<{ id: string; text: string; created_at: string; from_user?: User | User[] | null }>).forEach((row) => {
       const fromUser = Array.isArray(row.from_user) ? row.from_user[0] : row.from_user;
       if (fromUser) {
@@ -2825,6 +2830,10 @@ function AdminSheet({
     });
     setSupportUsers([...uniqueSupportUsers.values()]);
     setSupportTickets(nextTickets);
+    setSelectedSupportTicket((current) => {
+      if (!current) return null;
+      return nextTickets.find((ticket) => ticket.id === current.id) || current;
+    });
     setLoading(false);
   }, []);
 
@@ -2918,6 +2927,34 @@ function AdminSheet({
     setWorking(false);
     setAdminMessage("");
     showToast("Админ-сообщение отправлено.");
+  };
+
+  const sendSupportTicketReply = async () => {
+    if (!selectedSupportTicket || !supportReply.trim()) return;
+    setWorking(true);
+    const text = `[Ответ поддержки по заявке #${shortOrderId(selectedSupportTicket.id)}]\n${supportReply.trim()}`;
+    const { error } = await supabase.from("messages").insert({
+      id: `support_reply_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      from_uid: me.id,
+      to_uid: selectedSupportTicket.user.id,
+      text,
+      img: null,
+      read: false,
+      file_type: "support",
+    });
+    setWorking(false);
+    if (error) {
+      showToast(error.message || "Не удалось отправить ответ.", "err");
+      return;
+    }
+    setSupportReply("");
+    await notifyTelegram(
+      selectedSupportTicket.user.id,
+      `Поддержка ответила по заявке #${shortOrderId(selectedSupportTicket.id)}.\n\n${supportReply.trim().slice(0, 160)}`,
+      "Открыть чат поддержки",
+      getAppBaseUrl()
+    );
+    showToast("Ответ отправлен пользователю.");
   };
 
   const injectAdminMessageIntoDialog = async () => {
@@ -3335,19 +3372,79 @@ function AdminSheet({
           {adminTab === "support" && (
             <>
               <SectionTitle>Центр поддержки</SectionTitle>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10, marginBottom: 14 }}>
+                <div className="panel" style={{ padding: 12 }}>
+                  <div className="title" style={{ color: T.gold, fontSize: 20 }}>{supportTickets.length}</div>
+                  <div style={{ color: T.text3, fontSize: 11, marginTop: 4 }}>Заявок</div>
+                </div>
+                <div className="panel" style={{ padding: 12 }}>
+                  <div className="title" style={{ color: T.gold, fontSize: 20 }}>{supportUsers.length}</div>
+                  <div style={{ color: T.text3, fontSize: 11, marginTop: 4 }}>Пользователей</div>
+                </div>
+              </div>
+
+              {selectedSupportTicket && (
+                <div className="panel" style={{ padding: 14, marginBottom: 14, borderColor: "rgba(35,151,255,.32)" }}>
+                  <SectionTitle
+                    right={
+                      <button className="btn-ghost" style={{ padding: "7px 10px", fontSize: 12 }} onClick={() => setSelectedSupportTicket(null)}>
+                        Закрыть
+                      </button>
+                    }
+                  >
+                    Заявка #{shortOrderId(selectedSupportTicket.id)}
+                  </SectionTitle>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <Avatar user={selectedSupportTicket.user} size={42} />
+                    <div>
+                      <div style={{ fontWeight: 800 }}>@{getUsername(selectedSupportTicket.user)}</div>
+                      <div style={{ color: T.text3, fontSize: 12 }}>{formatDate(selectedSupportTicket.created_at)} {formatTime(selectedSupportTicket.created_at)}</div>
+                    </div>
+                  </div>
+                  <div style={{ color: T.text2, whiteSpace: "pre-wrap", lineHeight: 1.6, marginBottom: 12 }}>
+                    {selectedSupportTicket.text}
+                  </div>
+                  <textarea
+                    className="inp"
+                    rows={4}
+                    value={supportReply}
+                    onChange={(e) => setSupportReply(e.target.value.slice(0, 800))}
+                    placeholder="Ответ пользователю по этой заявке..."
+                    style={{ borderRadius: 22, marginBottom: 10 }}
+                  />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <button className="btn-primary" disabled={working || !supportReply.trim()} onClick={sendSupportTicketReply}>
+                      Ответить
+                    </button>
+                    <button className="btn-ghost" onClick={() => onOpenSupportChat(selectedSupportTicket.user)}>
+                      Открыть чат
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {supportTickets.length === 0 && <div style={{ color: T.text3, marginBottom: 16 }}>Пока нет заявок в поддержку.</div>}
               {supportTickets.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
                   {supportTickets.map((ticket) => (
-                    <div key={ticket.id} className="panel" style={{ padding: 14 }}>
+                    <div key={ticket.id} className="panel" style={{ padding: 14, borderColor: selectedSupportTicket?.id === ticket.id ? "rgba(35,151,255,.42)" : T.line }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
-                        <div style={{ fontWeight: 700 }}>@{getUsername(ticket.user)}</div>
+                        <div style={{ fontWeight: 800 }}>Заявка #{shortOrderId(ticket.id)} • @{getUsername(ticket.user)}</div>
                         <div style={{ color: T.text3, fontSize: 12 }}>{formatDate(ticket.created_at)} {formatTime(ticket.created_at)}</div>
                       </div>
-                      <div style={{ color: T.text2, whiteSpace: "pre-wrap", lineHeight: 1.6, marginBottom: 10 }}>{ticket.text}</div>
+                      <div style={{ color: T.text2, whiteSpace: "pre-wrap", lineHeight: 1.6, marginBottom: 10, maxHeight: 120, overflow: "hidden" }}>{ticket.text}</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <button
                           className="btn-primary"
+                          onClick={() => {
+                            setSelectedSupportTicket(ticket);
+                            setSupportReply("");
+                          }}
+                        >
+                          Открыть заявку
+                        </button>
+                        <button
+                          className="btn-ghost"
                           onClick={() => {
                             selectUser(ticket.user);
                             setAdminTab("users");
@@ -3493,9 +3590,11 @@ function CartSheet({ onClose }: { onClose: () => void }) {
 
 function MarketMenuSheet({
   onClose,
+  onOpenSupport,
   showToast,
 }: {
   onClose: () => void;
+  onOpenSupport: () => void;
   showToast: (message: string, type?: "ok" | "err") => void;
 }) {
   const openTelegram = (handle: string) => {
@@ -3548,7 +3647,15 @@ function MarketMenuSheet({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <button className="btn-ghost tap-scale" onClick={showRules}>Правила</button>
-        <button className="btn-primary tap-scale" onClick={() => openTelegram("@RoWorth")}>Поддержка</button>
+        <button
+          className="btn-primary tap-scale"
+          onClick={() => {
+            onClose();
+            onOpenSupport();
+          }}
+        >
+          Поддержка
+        </button>
       </div>
     </Sheet>
   );
@@ -3914,10 +4021,11 @@ export default function App() {
         return;
       }
       const supportAdmin = admins[0] as User;
+      const ticketId = `support_${supportAdmin.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
       const reasonLabel = SUPPORT_REASONS.find((item) => item.value === payload.reason)?.label || payload.reason;
       const ticketText =
-        `[Тикет поддержки]\n` +
+        `[Тикет поддержки #${shortOrderId(ticketId)}]\n` +
         `Причина: ${reasonLabel}\n` +
         `Пользователь: ${payload.nickname}\n` +
         `Роль: ${payload.role === "BUYER" ? "Покупатель" : "Продавец"}\n` +
@@ -3926,7 +4034,7 @@ export default function App() {
         `${payload.text}`;
 
       const rows = [{
-        id: `support_${supportAdmin.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        id: ticketId,
         from_uid: me.id,
         to_uid: supportAdmin.id,
         text: ticketText,
@@ -4174,14 +4282,14 @@ export default function App() {
           />
         )}
         {!chatUser && tab === "admin" && me.is_admin && (
-          <AdminSheet me={me} onClose={() => setTab("profile")} onUserUpdated={setMe} onOpenChat={openChat} onOpenSupportChat={openSupportChat} showToast={showToast} />
+          <AdminSheet me={me} onClose={() => setTab("profile")} onUserUpdated={setMe} onOpenChat={openChat} onOpenSupportChat={openSupportChat} notifyTelegram={notifyTelegram} showToast={showToast} />
         )}
       </div>
 
       {!chatUser && <TabBar tab={tab} setTab={setTab} unread={unread} pendingOrders={pendingOrders} onCreate={() => setShowCreate(true)} isAdmin={Boolean(me.is_admin)} />}
 
       {showWallet && <WalletSheet me={me} onClose={() => setShowWallet(false)} showToast={showToast} />}
-      {showMenu && <MarketMenuSheet onClose={() => setShowMenu(false)} showToast={showToast} />}
+      {showMenu && <MarketMenuSheet onClose={() => setShowMenu(false)} onOpenSupport={() => setShowSupport(true)} showToast={showToast} />}
       {showCart && <CartSheet onClose={() => setShowCart(false)} />}
 
       {selectedOffer && (
