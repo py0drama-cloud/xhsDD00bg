@@ -382,9 +382,6 @@ select.inp{
 .tap-scale:active{transform:scale(.96)}
 .portal-card{animation:portalAppear .32s cubic-bezier(.2,.85,.2,1);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
 .portal-card:active{transform:scale(.985)}
-.range-clean{appearance:none;width:100%;height:6px;border-radius:999px;background:#8A8A8A;outline:none}
-.range-clean::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:999px;background:#fff;border:0;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.35)}
-.range-clean::-moz-range-thumb{width:22px;height:22px;border-radius:999px;background:#fff;border:0;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.35)}
 .pill.active{animation:jelly .46s cubic-bezier(.2,1.2,.2,1)}
 .create-form .inp{border-radius:18px}
 .create-form textarea.inp{border-radius:18px}
@@ -1004,9 +1001,13 @@ function SetupUsername({
 function OfferCard({
   offer,
   onOpen,
+  onAddToCart,
+  inCart = false,
 }: {
   offer: Offer;
   onOpen: (offer: Offer) => void;
+  onAddToCart?: (offer: Offer) => void;
+  inCart?: boolean;
 }) {
   const cover = getOfferCover(offer);
   const seller = offer.user;
@@ -1059,13 +1060,18 @@ function OfferCard({
         <button
           type="button"
           className="tap-scale"
+          onClick={(event) => {
+            event.stopPropagation();
+            onAddToCart?.(offer);
+          }}
+          title={inCart ? "Уже в корзине" : "Добавить в корзину"}
           style={{
             width: 42,
             height: 42,
             borderRadius: 14,
             border: "1px solid rgba(255,255,255,.08)",
-            background: "#3A3A3A",
-            color: "#fff",
+            background: inCart ? "rgba(35,151,255,.22)" : "#3A3A3A",
+            color: inCart ? T.blue : "#fff",
             display: "grid",
             placeItems: "center",
             flexShrink: 0,
@@ -1615,12 +1621,18 @@ function UserProfileSheet({
 function HomeScreen({
   me,
   onOpenOffer,
+  onAddToCart,
+  cartCount,
+  cartIds,
   onOpenMenu,
   onOpenWallet,
   onOpenCart,
 }: {
   me: User;
   onOpenOffer: (offer: Offer) => void;
+  onAddToCart: (offer: Offer) => void;
+  cartCount: number;
+  cartIds: Set<string>;
   onOpenMenu: () => void;
   onOpenWallet: () => void;
   onOpenCart: () => void;
@@ -1633,7 +1645,6 @@ function HomeScreen({
   const [sort, setSort] = useState<"new" | "sales" | "price_asc" | "price_desc">("new");
   const [showFilters, setShowFilters] = useState(true);
   const [compactMode, setCompactMode] = useState(false);
-  const [priceLimit, setPriceLimit] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -1670,19 +1681,14 @@ function HomeScreen({
       result = result.filter((offer) => offer.cur === currencyFilter);
     }
 
-    if (priceLimit > 0) {
-      result = result.filter((offer) => offer.price <= priceLimit);
-    }
-
     if (sort === "sales") result.sort((a, b) => (b.sales || 0) - (a.sales || 0));
     if (sort === "price_asc") result.sort((a, b) => a.price - b.price);
     if (sort === "price_desc") result.sort((a, b) => b.price - a.price);
     if (sort === "new") result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return result;
-  }, [currencyFilter, kindFilter, offers, priceLimit, search, sort]);
+  }, [currencyFilter, kindFilter, offers, search, sort]);
 
-  const maxOfferPrice = useMemo(() => Math.max(0, ...offers.map((offer) => Number(offer.price || 0))), [offers]);
   const openTelegram = (handle: string) => {
     window.open(`https://t.me/${handle.replace(/^@/, "")}`, "_blank", "noopener,noreferrer");
   };
@@ -1745,7 +1751,7 @@ function HomeScreen({
             Все товары
           </button>
           <button className="tap-scale" onClick={onOpenCart} style={{ border: "none", background: "transparent", padding: 0, color: "#3D3D3D", fontSize: 25, lineHeight: 1, fontWeight: 900, cursor: "pointer" }}>
-            Корзина
+            Корзина{cartCount ? ` (${cartCount})` : ""}
           </button>
         </div>
 
@@ -1772,20 +1778,6 @@ function HomeScreen({
           </button>
         </div>
 
-        {showFilters && <div className="panel portal-appear" style={{ minHeight: 54, borderRadius: 18, padding: "16px 14px", marginBottom: 10, background: "#1A1A1A" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-            <input
-              className="range-clean"
-              min={0}
-              max={Math.max(1, maxOfferPrice)}
-              step={1}
-              value={priceLimit}
-              onChange={(event) => setPriceLimit(Number(event.target.value))}
-              aria-label="Фильтр по цене"
-            />
-          </div>
-        </div>}
-
         {showFilters && <div className="hide-scrollbar portal-appear" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", marginBottom: 16, paddingBottom: 2 }}>
           <button className="btn-ghost tap-scale" style={{ width: 42, height: 42, borderRadius: 999, padding: 0, background: "#222" }} onClick={() => setCurrencyFilter("ALL")}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#A7A7A7"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" /></svg>
@@ -1800,6 +1792,8 @@ function HomeScreen({
           <button className={`pill${sort === "sales" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setSort(sort === "sales" ? "new" : "sales")}>Популярные</button>
           <button className={`pill${sort === "price_asc" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setSort(sort === "price_asc" ? "new" : "price_asc")}>Дешевле</button>
           <button className={`pill${sort === "price_desc" ? " active" : ""}`} style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setSort(sort === "price_desc" ? "new" : "price_desc")}>Дороже</button>
+          <button className="pill" style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => setSearch("")}>Сброс поиска</button>
+          <button className="pill" style={{ height: 42, padding: "0 15px", fontSize: 14 }} onClick={() => { setKindFilter("ALL"); setCurrencyFilter("ALL"); setSort("new"); }}>Сброс фильтров</button>
         </div>}
 
         {loading && (
@@ -1813,7 +1807,7 @@ function HomeScreen({
         {!loading && filtered.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {filtered.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} onOpen={onOpenOffer} />
+              <OfferCard key={offer.id} offer={offer} onOpen={onOpenOffer} onAddToCart={onAddToCart} inCart={cartIds.has(offer.id)} />
             ))}
           </div>
         )}
@@ -3589,13 +3583,68 @@ function WalletSheet({
   );
 }
 
-function CartSheet({ onClose }: { onClose: () => void }) {
+function CartSheet({
+  items,
+  onClose,
+  onRemove,
+  onClear,
+  onOpenOffer,
+}: {
+  items: Offer[];
+  onClose: () => void;
+  onRemove: (offerId: string) => void;
+  onClear: () => void;
+  onOpenOffer: (offer: Offer) => void;
+}) {
+  const totalStars = items.filter((item) => item.cur === "STARS").reduce((sum, item) => sum + Number(item.price || 0), 0);
+  const totalRobux = items.filter((item) => item.cur === "ROBUX").reduce((sum, item) => sum + Number(item.price || 0), 0);
   return (
     <Sheet onClose={onClose} maxWidth={540}>
-      <SectionTitle>Корзина</SectionTitle>
-      <div className="panel" style={{ padding: 16, color: T.text2, lineHeight: 1.6 }}>
-        Корзина пока пустая. Когда добавим полноценное оформление заказа, выбранные товары будут появляться здесь.
-      </div>
+      <SectionTitle right={items.length > 0 ? <button className="btn-ghost" style={{ padding: "7px 10px", fontSize: 12 }} onClick={onClear}>Очистить</button> : null}>
+        Корзина
+      </SectionTitle>
+      {items.length === 0 && (
+        <div className="panel" style={{ padding: 16, color: T.text2, lineHeight: 1.6 }}>
+          Корзина пустая. Нажми на иконку корзины в карточке товара, чтобы добавить его сюда.
+        </div>
+      )}
+      {items.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="panel" style={{ padding: 14, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+            <div>
+              <div className="title" style={{ color: T.gold, fontSize: 20 }}>{items.length}</div>
+              <div style={{ color: T.text3, fontSize: 11 }}>товаров</div>
+            </div>
+            <div>
+              <div className="title" style={{ color: T.gold, fontSize: 20 }}>$ {totalStars}</div>
+              <div style={{ color: T.text3, fontSize: 11 }}>доллары</div>
+            </div>
+            <div>
+              <div className="title" style={{ color: T.gold, fontSize: 20 }}>{totalRobux} R$</div>
+              <div style={{ color: T.text3, fontSize: 11 }}>robux</div>
+            </div>
+          </div>
+          {items.map((item) => (
+            <div key={item.id} className="panel" style={{ padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 58, height: 58, borderRadius: 14, background: getOfferCover(item) ? `url(${getOfferCover(item)}) center/cover` : getProfileGradient(item.user), flexShrink: 0 }} />
+              <button
+                onClick={() => onOpenOffer(item)}
+                style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", color: T.text, textAlign: "left", padding: 0, cursor: "pointer" }}
+              >
+                <div style={{ fontWeight: 900, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+                <div style={{ color: T.text3, fontSize: 12, marginTop: 3 }}>@{getUsername(item.user)} • {item.type}</div>
+              </button>
+              <div style={{ fontWeight: 900, color: T.blue, whiteSpace: "nowrap" }}>{item.price} {item.cur === "ROBUX" ? "R$" : "$"}</div>
+              <button className="btn-ghost tap-scale" style={{ width: 36, height: 36, padding: 0, borderRadius: 12 }} onClick={() => onRemove(item.id)}>
+                ×
+              </button>
+            </div>
+          ))}
+          <button className="btn-primary" onClick={onClose}>
+            Продолжить покупки
+          </button>
+        </div>
+      )}
     </Sheet>
   );
 }
@@ -3810,6 +3859,7 @@ export default function App() {
   const [showWallet, setShowWallet] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showCart, setShowCart] = useState(false);
+  const [cartItems, setCartItems] = useState<Offer[]>([]);
   const [autoContent, setAutoContent] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "ok" | "err" } | null>(null);
   const [unread, setUnread] = useState(0);
@@ -3819,6 +3869,22 @@ export default function App() {
   const showToast = useCallback((message: string, type: "ok" | "err" = "ok") => {
     setToast({ message, type });
     window.setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  const cartIds = useMemo(() => new Set(cartItems.map((item) => item.id)), [cartItems]);
+
+  const addToCart = useCallback((offer: Offer) => {
+    let added = false;
+    setCartItems((current) => {
+      if (current.some((item) => item.id === offer.id)) return current;
+      added = true;
+      return [...current, offer];
+    });
+    showToast(added ? "Товар добавлен в корзину." : "Товар уже в корзине.");
+  }, [showToast]);
+
+  const removeFromCart = useCallback((offerId: string) => {
+    setCartItems((current) => current.filter((item) => item.id !== offerId));
   }, []);
 
   const notifyTelegram = useCallback(async (chatId: string, text: string, buttonText?: string, buttonUrl?: string) => {
@@ -4268,6 +4334,9 @@ export default function App() {
           <HomeScreen
             me={me}
             onOpenOffer={setSelectedOffer}
+            onAddToCart={addToCart}
+            cartCount={cartItems.length}
+            cartIds={cartIds}
             onOpenMenu={() => setShowMenu(true)}
             onOpenWallet={() => setShowWallet(true)}
             onOpenCart={() => setShowCart(true)}
@@ -4302,7 +4371,18 @@ export default function App() {
 
       {showWallet && <WalletSheet me={me} onClose={() => setShowWallet(false)} showToast={showToast} />}
       {showMenu && <MarketMenuSheet onClose={() => setShowMenu(false)} onOpenSupport={() => setShowSupport(true)} showToast={showToast} />}
-      {showCart && <CartSheet onClose={() => setShowCart(false)} />}
+      {showCart && (
+        <CartSheet
+          items={cartItems}
+          onClose={() => setShowCart(false)}
+          onRemove={removeFromCart}
+          onClear={() => setCartItems([])}
+          onOpenOffer={(offer) => {
+            setShowCart(false);
+            setSelectedOffer(offer);
+          }}
+        />
+      )}
 
       {selectedOffer && (
         <OfferSheet
