@@ -296,7 +296,12 @@ button{outline:none}
   border-color:rgba(35,151,255,.58);
   box-shadow:0 0 0 4px rgba(35,151,255,.14), inset 0 1px 0 rgba(255,255,255,.08)
 }
-textarea.inp{resize:none}
+textarea.inp{
+  resize:none;
+  border-radius:18px;
+  min-height:96px;
+  line-height:1.45
+}
 select.inp{
   appearance:none;
   background-image:
@@ -382,7 +387,7 @@ select.inp{
 .range-clean::-moz-range-thumb{width:22px;height:22px;border-radius:999px;background:#fff;border:0;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.35)}
 .pill.active{animation:jelly .46s cubic-bezier(.2,1.2,.2,1)}
 .create-form .inp{border-radius:18px}
-.create-form textarea.inp{border-radius:28px}
+.create-form textarea.inp{border-radius:18px}
 .create-form select.inp{border-radius:18px}
 .home-select-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .chat-shortcuts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
@@ -2177,7 +2182,14 @@ function SupportSheet({
         </div>
         <div>
           <div style={{ fontWeight: 700, marginBottom: 8 }}>Комментарий</div>
-          <textarea className="inp" rows={7} value={text} onChange={(e) => setText(e.target.value.slice(0, 1200))} placeholder="Опиши проблему подробно..." />
+          <textarea
+            className="inp"
+            rows={4}
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 1200))}
+            placeholder="Опиши проблему подробно..."
+            style={{ minHeight: 110 }}
+          />
         </div>
         <button
           className="btn-primary"
